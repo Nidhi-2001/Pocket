@@ -61,3 +61,6 @@ supabase/.temp
 # Generated native folders (when not using managed workflow)
 /ios
 /android
+
+# Local-only QR codes for dev server connection
+pocket-qr.png
