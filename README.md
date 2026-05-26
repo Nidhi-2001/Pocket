@@ -29,7 +29,7 @@ but the roadmap below is the source of truth for direction.
 
 ## Status
 
-**Current phase: 6 of 6 (Goals + nudges + personality)**
+**Current phase: all six MVP phases complete.** Cron scheduling and landing page are the remaining optional polish.
 
 | # | Phase                                            | Status |
 | - | ------------------------------------------------ | ------ |
@@ -39,8 +39,15 @@ but the roadmap below is the source of truth for direction.
 | 3 | SMS parser edge function (Groq)                  | ✅      |
 | 4 | Core screens: Home, Spends, Transaction detail   | ✅      |
 | 5 | AI chat edge function (Groq) + chat screen       | ✅      |
-| 6 | Goals, nightly nudge cron, monthly personality   | ⏳ next |
+| 6 | Goals + nudges + monthly personality             | ✅\*    |
 | + | Landing page (Vercel) — only for Play Store      | ☐      |
+
+\* Phase 6 is functionally complete: Goals UI, `goal-nudge` and `personality`
+edge functions, and Home surfacing all work. Cron *scheduling* (so the
+functions run automatically on a schedule) is the one optional bit that
+isn't wired up — for now both functions can be invoked on-demand from
+Home's "Pocket insights" buttons. Set up via Supabase dashboard or
+pg_cron when ready for production.
 
 What runs today: the app is a working spending dashboard. A signed-in user can
 - complete the email-OTP onboarding (welcome → SMS-permission → OTP → setup),

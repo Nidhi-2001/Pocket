@@ -96,7 +96,7 @@ Breaking any of these is a bug, even if tests pass.
 | 3     | `parse-sms` edge function (Groq)                  | ✅ done |
 | 4     | Home / Spends / Transaction detail screens        | ✅ done |
 | 5     | `chat-agent` edge function + chat screen          | ✅ done |
-| 6     | Goals + nudge cron + monthly personality          | ⏳ next |
+| 6     | Goals + nudge + personality (cron scheduling TBD) | ✅ done |
 
 When you finish a sub-step, commit and update the README status table
 (`## Status` section) so the repo's own docs track reality.
