@@ -29,7 +29,7 @@ but the roadmap below is the source of truth for direction.
 
 ## Status
 
-**Current phase: 5 of 6 (AI chat)**
+**Current phase: 6 of 6 (Goals + nudges + personality)**
 
 | # | Phase                                            | Status |
 | - | ------------------------------------------------ | ------ |
@@ -38,8 +38,8 @@ but the roadmap below is the source of truth for direction.
 | 2 | Auth + onboarding screens (email OTP)            | ✅      |
 | 3 | SMS parser edge function (Groq)                  | ✅      |
 | 4 | Core screens: Home, Spends, Transaction detail   | ✅      |
-| 5 | AI chat edge function (Gemini) + chat screen     | ⏳ next |
-| 6 | Goals, nightly nudge cron, monthly personality   | ☐      |
+| 5 | AI chat edge function (Groq) + chat screen       | ✅      |
+| 6 | Goals, nightly nudge cron, monthly personality   | ⏳ next |
 | + | Landing page (Vercel) — only for Play Store      | ☐      |
 
 What runs today: the app is a working spending dashboard. A signed-in user can
