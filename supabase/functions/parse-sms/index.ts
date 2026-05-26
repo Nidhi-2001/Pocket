@@ -135,12 +135,24 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
+    // Extract the raw JWT and validate it explicitly. Passing the token to
+    // getUser() does a server-side verification call and avoids any quirk
+    // where createClient's global header doesn't propagate into auth.getUser.
+    const jwt = authHeader.replace(/^Bearer\s+/i, '');
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser(jwt);
     if (userError || !user) {
-      return json({ error: 'Invalid auth' }, 401);
+      console.error('getUser failed', userError);
+      return json(
+        {
+          error: 'Invalid auth',
+          detail: userError?.message ?? 'no user resolved from JWT',
+          tokenPrefix: jwt.slice(0, 12) + '…',
+        },
+        401,
+      );
     }
 
     const body = await req.json().catch(() => null);
