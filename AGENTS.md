@@ -37,7 +37,7 @@ Breaking any of these is a bug, even if tests pass.
 | 3 | Categories: exactly `Food / Transport / Shopping / Entertainment / Other`.   |
 | 4 | RLS is enabled on every public table. New tables must enable RLS + policies. |
 | 5 | The React Native bundle never calls an AI provider directly — only Supabase Edge Functions do. |
-| 6 | Only `EXPO_PUBLIC_*` env vars are safe in the app. `SUPABASE_SERVICE_ROLE_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY` are server-only. |
+| 6 | Only `EXPO_PUBLIC_*` env vars are safe in the app. `SUPABASE_SERVICE_ROLE_KEY` and `GROQ_API_KEY` are server-only. (All AI agents — SMS parser, chat, personality — use Groq; we are NOT using Gemini or Mistral.) |
 | 7 | NativeWind classes for all styling. **No `StyleSheet.create`.** If a token is missing, extend `tailwind.config.js`. |
 | 8 | TypeScript strict. No `any`. No `// @ts-ignore` without a justifying comment. |
 | 9 | Never commit `.env.local`, `.env`, `pocket-qr.png`, or anything matching the gitignore. |

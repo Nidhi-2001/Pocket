@@ -81,9 +81,7 @@ maintain a spreadsheet.
 | Styling          | NativeWind (Tailwind CSS for RN)                                          | One styling vocabulary across mobile + web; no `StyleSheet.create` |
 | Routing          | Expo Router (file-based)                                                  | URL-addressable screens; same mental model as Next.js              |
 | Backend          | Supabase (Postgres + auth + edge functions + cron)                        | One platform, generous free tier, RLS first-class                  |
-| AI — SMS parsing | Groq `llama-3.3-70b-versatile`                                            | Fast + free tier; structured JSON output                           |
-| AI — chat        | Google Gemini 2.5 Flash                                                   | Cheap, fast, long-context for transaction grounding                |
-| AI — personality | Mistral `mistral-small-latest`                                            | Cheap, monthly-only batch                                          |
+| AI — all agents  | Groq `llama-3.3-70b-versatile` (SMS parsing, chat, monthly personality)   | One provider, one key, fastest inference. Free tier (30 RPM, 14.4k req/day) is more than enough for personal-scale traffic. |
 | Auth             | Supabase email OTP                                                        | Free; pivoted from phone OTP after Supabase required a paid SMS provider |
 | Build            | EAS Build                                                                 | Cloud builds; no Android Studio / Xcode needed locally             |
 | Landing page     | Next.js on Vercel                                                         | Static + fast; only needed at Play Store submission                |
