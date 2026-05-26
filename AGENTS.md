@@ -93,8 +93,8 @@ Breaking any of these is a bug, even if tests pass.
 | 0     | Expo scaffold + NativeWind + repo + dev server    | ✅ done |
 | 1     | Supabase project + schema + RLS + client connects | ✅ done |
 | 2     | Auth + onboarding screens (email OTP)             | ✅ done |
-| 3     | `parse-sms` edge function (Groq)                  | ⏳ next |
-| 4     | Home / Spends / Transaction detail screens        | ☐      |
+| 3     | `parse-sms` edge function (Groq)                  | ✅ done |
+| 4     | Home / Spends / Transaction detail screens        | ⏳ next |
 | 5     | `chat-agent` edge function + chat screen          | ☐      |
 | 6     | Goals + nudge cron + monthly personality          | ☐      |
 

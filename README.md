@@ -29,22 +29,25 @@ but the roadmap below is the source of truth for direction.
 
 ## Status
 
-**Current phase: 3 of 6 (SMS parser — backend AI agent)**
+**Current phase: 4 of 6 (Core screens)**
 
 | # | Phase                                            | Status |
 | - | ------------------------------------------------ | ------ |
 | 0 | Foundation: Expo + NativeWind + GitHub           | ✅      |
 | 1 | Backend: Supabase project + schema + RLS         | ✅      |
 | 2 | Auth + onboarding screens (email OTP)            | ✅      |
-| 3 | SMS parser edge function (Groq)                  | ⏳ next |
-| 4 | Core screens: Home, Spends, Transaction detail   | ☐      |
+| 3 | SMS parser edge function (Groq)                  | ✅      |
+| 4 | Core screens: Home, Spends, Transaction detail   | ⏳ next |
 | 5 | AI chat edge function (Gemini) + chat screen     | ☐      |
 | 6 | Goals, nightly nudge cron, monthly personality   | ☐      |
 | + | Landing page (Vercel) — only for Play Store      | ☐      |
 
-What runs today: a signed-in user can complete the email-OTP onboarding flow
-end to end, get a `profiles` row created, and land on a placeholder authenticated
-home screen on the web target.
+What runs today: a signed-in user can complete the email-OTP onboarding flow,
+paste a bank SMS into a test surface on the home screen, and watch it become a
+structured transaction row in `public.transactions` via Groq llama-3.3. The
+parser correctly categorises Food / Transport / Shopping / Entertainment /
+Other, distinguishes debit from credit, returns IST-correct timestamps, and
+rejects non-transaction SMS (OTPs, marketing, balance alerts).
 
 ---
 
