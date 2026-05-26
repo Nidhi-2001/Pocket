@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -7,194 +8,164 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { formatCurrency, formatDateIST } from '../../lib/formatters';
+import { HeroSpendCard } from '../../components/home/HeroSpendCard';
+import { TransactionRow } from '../../components/home/TransactionRow';
+import { useProfile } from '../../hooks/useProfile';
+import { useTransactions } from '../../hooks/useTransactions';
 import { supabase } from '../../lib/supabase';
-import type { Transaction } from '../../types';
 
-type ParseResult =
-  | { valid: false; message?: string }
-  | { valid: true; duplicate?: boolean; transaction?: Transaction; message?: string };
+export default function HomeTab() {
+  const { profile } = useProfile();
+  const { transactions, refetch } = useTransactions({ limit: 10 });
 
-export default function TabsHome() {
-  const [name, setName] = useState<string | null>(null);
   const [smsText, setSmsText] = useState('');
   const [parsing, setParsing] = useState(false);
-  const [result, setResult] = useState<ParseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [parseHint, setParseHint] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase
-      .from('profiles')
-      .select('name')
-      .single()
-      .then(({ data }) => setName(data?.name ?? null));
-  }, []);
+  // Month-to-date debit total for the hero card. Computed client-side from
+  // the recent-10 set; for a heavier user we'd swap this for a dedicated
+  // aggregate query.
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const monthlySpent = transactions
+    .filter(
+      (tx) =>
+        tx.transaction_type === 'debit' &&
+        new Date(tx.transacted_at) >= monthStart,
+    )
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const recentFive = transactions.slice(0, 5);
 
   async function parseSms() {
     if (!smsText.trim()) return;
     setParsing(true);
     setError(null);
-    setResult(null);
+    setParseHint(null);
     const { data, error: err } = await supabase.functions.invoke('parse-sms', {
       body: { smsText: smsText.trim() },
     });
     setParsing(false);
+
     if (err) {
-      console.error('parse-sms invocation error:', err);
-      // supabase-js wraps non-2xx as FunctionsHttpError and stashes the real
-      // Response on err.context. Pull the body out so we see what the function
-      // actually said, not the generic wrapper text.
       const ctx = (err as { context?: unknown }).context;
       if (ctx instanceof Response) {
-        try {
-          const body = await ctx.json();
-          const detail = body.detail ? ` — ${body.detail}` : '';
-          setError(`${body.error ?? `HTTP ${ctx.status}`}${detail}`);
-        } catch {
-          const text = await ctx.text().catch(() => '');
-          setError(`HTTP ${ctx.status}${text ? ` — ${text}` : ''}`);
-        }
+        const body = await ctx.json().catch(() => null);
+        setError(body?.error ?? `HTTP ${ctx.status}`);
       } else {
         setError(err.message || String(err));
       }
       return;
     }
-    if (data && typeof data === 'object' && 'error' in data) {
-      setError(`${data.error}${data.detail ? ` — ${data.detail}` : ''}`);
-      return;
-    }
-    setResult(data as ParseResult);
-  }
 
-  async function signOut() {
-    await supabase.auth.signOut();
+    if (data && typeof data === 'object') {
+      if ('valid' in data && data.valid === false) {
+        setParseHint('Not a transaction SMS — nothing was added.');
+      } else if ('duplicate' in data && data.duplicate) {
+        setParseHint('Already imported — this looks like the same transaction.');
+      } else {
+        setParseHint('Added to your transactions ✓');
+        setSmsText('');
+        refetch();
+      }
+    }
   }
 
   return (
     <ScrollView className="flex-1 bg-background">
-      <View className="px-6 pt-16 pb-8">
-        <Text className="text-3xl font-bold text-text-primary mb-1">
-          Hey {name ?? 'there'} 👋
+      <View className="px-6 pt-16 pb-4">
+        <Text className="text-base text-text-secondary mb-1">
+          Hey {profile?.name ?? 'there'} 👋
         </Text>
-        <Text className="text-base text-text-secondary">
-          Paste a bank SMS to test the parser.
+        <Text className="text-2xl font-bold text-text-primary">
+          Let&apos;s see where your money went.
         </Text>
       </View>
 
-      <View className="px-6 pb-6">
-        <Text className="text-sm font-medium text-text-secondary mb-2">
-          Bank SMS text
-        </Text>
-        <TextInput
-          value={smsText}
-          onChangeText={setSmsText}
-          placeholder="Dear UPI user A/C *1234 debited Rs.299 on 24-MAR-26 trf to ZOMATO LTD..."
-          placeholderTextColor="#9CA3AF"
-          multiline
-          numberOfLines={5}
-          style={{ textAlignVertical: 'top', minHeight: 120 }}
-          className="bg-surface border border-border rounded-2xl px-4 py-3 text-base text-text-primary mb-4"
+      <View className="px-6 mb-6">
+        <HeroSpendCard
+          spent={monthlySpent}
+          budget={profile?.monthly_budget ?? 2_000_000}
         />
+      </View>
 
-        <Pressable
-          onPress={parseSms}
-          disabled={parsing || !smsText.trim()}
-          className={`py-4 rounded-2xl items-center ${
-            parsing || !smsText.trim()
-              ? 'bg-text-muted'
-              : 'bg-primary active:opacity-80'
-          }`}
-        >
-          {parsing ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="text-white font-semibold text-base">
-              Parse with AI
-            </Text>
-          )}
-        </Pressable>
+      <View className="px-6 mb-2 flex-row items-center justify-between">
+        <Text className="text-lg font-semibold text-text-primary">
+          Recent transactions
+        </Text>
+        {transactions.length > 5 && (
+          <Text className="text-sm text-primary font-medium">See all</Text>
+        )}
+      </View>
 
-        {error && (
-          <View className="border border-danger rounded-2xl p-4 mt-4">
-            <Text className="text-danger text-xs font-semibold uppercase mb-1">
-              Error
+      <View className="px-6 mb-8">
+        {recentFive.length === 0 ? (
+          <View className="bg-surface border border-border rounded-2xl p-6 items-center">
+            <Text className="text-3xl mb-2">📭</Text>
+            <Text className="text-text-secondary text-center text-sm">
+              No transactions yet. Paste a bank SMS below to add one.
             </Text>
-            <Text className="text-danger text-sm">{error}</Text>
+          </View>
+        ) : (
+          <View className="gap-2">
+            {recentFive.map((tx) => (
+              <TransactionRow key={tx.id} tx={tx} />
+            ))}
           </View>
         )}
-
-        {result && <ResultCard result={result} />}
       </View>
 
-      <View className="px-6 pt-2 pb-12">
-        <Pressable
-          onPress={signOut}
-          className="border border-border bg-surface py-3 rounded-2xl items-center active:opacity-80"
-        >
-          <Text className="text-text-secondary text-sm">Sign out</Text>
-        </Pressable>
+      <View className="px-6 pb-12">
+        <Text className="text-xs text-text-muted uppercase mb-2 font-semibold tracking-wider">
+          Add a transaction
+        </Text>
+        <View className="bg-surface border border-border rounded-2xl p-4">
+          <Text className="text-sm text-text-secondary mb-3">
+            Paste a bank notification SMS and we&apos;ll parse it.
+          </Text>
+          <TextInput
+            value={smsText}
+            onChangeText={(t) => {
+              setSmsText(t);
+              setError(null);
+              setParseHint(null);
+            }}
+            placeholder="Dear UPI user A/C *1234 debited Rs.299..."
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={4}
+            style={{ textAlignVertical: 'top', minHeight: 80 }}
+            className="bg-background border border-border rounded-xl px-3 py-3 text-sm text-text-primary mb-3"
+          />
+          <Pressable
+            onPress={parseSms}
+            disabled={parsing || !smsText.trim()}
+            className={`flex-row items-center justify-center gap-2 py-3 rounded-xl ${
+              parsing || !smsText.trim()
+                ? 'bg-text-muted'
+                : 'bg-primary active:opacity-80'
+            }`}
+          >
+            {parsing ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <>
+                <Ionicons name="sparkles" size={16} color="white" />
+                <Text className="text-white font-semibold text-sm">
+                  Parse with AI
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          {error && (
+            <Text className="text-danger text-xs mt-3">{error}</Text>
+          )}
+          {parseHint && (
+            <Text className="text-success text-xs mt-3">{parseHint}</Text>
+          )}
+        </View>
       </View>
     </ScrollView>
-  );
-}
-
-function ResultCard({ result }: { result: ParseResult }) {
-  if (!result.valid) {
-    return (
-      <View className="bg-surface border border-border rounded-2xl p-4 mt-4">
-        <Text className="text-xs text-text-muted uppercase mb-1">Result</Text>
-        <Text className="text-text-primary font-medium mb-1">
-          Not a transaction SMS
-        </Text>
-        <Text className="text-text-secondary text-sm">
-          {result.message ?? 'The AI classified this as non-transactional (OTP, marketing, balance alert, etc.). No row was created.'}
-        </Text>
-      </View>
-    );
-  }
-  if (result.duplicate) {
-    return (
-      <View className="bg-surface border border-border rounded-2xl p-4 mt-4">
-        <Text className="text-xs text-text-muted uppercase mb-1">Result</Text>
-        <Text className="text-text-primary font-medium">
-          Already imported (dedup)
-        </Text>
-        <Text className="text-text-secondary text-sm mt-1">
-          A row with this user / amount / merchant / time already exists.
-        </Text>
-      </View>
-    );
-  }
-  if (!result.transaction) {
-    return null;
-  }
-  const tx = result.transaction;
-  const isDebit = tx.transaction_type === 'debit';
-  return (
-    <View className="bg-surface border border-border rounded-2xl p-4 mt-4">
-      <Text className="text-xs text-text-muted uppercase mb-2">
-        Parsed transaction
-      </Text>
-      <Text className="text-3xl font-bold text-text-primary mb-1">
-        {isDebit ? '-' : '+'}
-        {formatCurrency(tx.amount)}
-      </Text>
-      <Text className="text-base text-text-primary mb-3">{tx.merchant}</Text>
-      <View className="flex-row gap-3">
-        <Text className="text-sm text-primary font-medium">{tx.category}</Text>
-        <Text className="text-sm text-text-muted">·</Text>
-        <Text
-          className={`text-sm font-medium ${
-            isDebit ? 'text-danger' : 'text-success'
-          }`}
-        >
-          {tx.transaction_type}
-        </Text>
-        <Text className="text-sm text-text-muted">·</Text>
-        <Text className="text-sm text-text-secondary">
-          {formatDateIST(tx.transacted_at)}
-        </Text>
-      </View>
-    </View>
   );
 }

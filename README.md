@@ -29,7 +29,7 @@ but the roadmap below is the source of truth for direction.
 
 ## Status
 
-**Current phase: 4 of 6 (Core screens)**
+**Current phase: 5 of 6 (AI chat)**
 
 | # | Phase                                            | Status |
 | - | ------------------------------------------------ | ------ |
@@ -37,17 +37,18 @@ but the roadmap below is the source of truth for direction.
 | 1 | Backend: Supabase project + schema + RLS         | ✅      |
 | 2 | Auth + onboarding screens (email OTP)            | ✅      |
 | 3 | SMS parser edge function (Groq)                  | ✅      |
-| 4 | Core screens: Home, Spends, Transaction detail   | ⏳ next |
-| 5 | AI chat edge function (Gemini) + chat screen     | ☐      |
+| 4 | Core screens: Home, Spends, Transaction detail   | ✅      |
+| 5 | AI chat edge function (Gemini) + chat screen     | ⏳ next |
 | 6 | Goals, nightly nudge cron, monthly personality   | ☐      |
 | + | Landing page (Vercel) — only for Play Store      | ☐      |
 
-What runs today: a signed-in user can complete the email-OTP onboarding flow,
-paste a bank SMS into a test surface on the home screen, and watch it become a
-structured transaction row in `public.transactions` via Groq llama-3.3. The
-parser correctly categorises Food / Transport / Shopping / Entertainment /
-Other, distinguishes debit from credit, returns IST-correct timestamps, and
-rejects non-transaction SMS (OTPs, marketing, balance alerts).
+What runs today: the app is a working spending dashboard. A signed-in user can
+- complete the email-OTP onboarding (welcome → SMS-permission → OTP → setup),
+- paste a bank SMS on Home and watch it parse into a real transaction row,
+- see month-to-date spend vs budget in a hero card,
+- browse recent transactions on Home and a category donut breakdown on Spends,
+- tap a transaction to open a full-screen detail, change its category, or delete it,
+- navigate between 5 tabs (Home, Spends, Goals, Chat, Profile) with persistent state and refetch-on-focus so edits propagate instantly.
 
 ---
 
