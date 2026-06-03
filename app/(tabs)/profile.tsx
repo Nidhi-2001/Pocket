@@ -17,7 +17,7 @@ export default function ProfileTab() {
     supabase
       .from('profiles')
       .select('name, monthly_budget')
-      .single()
+      .maybeSingle()
       .then(({ data }) => setProfile(data ?? null));
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, []);

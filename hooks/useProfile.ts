@@ -17,12 +17,15 @@ export function useProfile(): UseProfileResult {
     supabase
       .from('profiles')
       .select('*')
-      .single()
+      .maybeSingle()
       .then(({ data, error: err }) => {
         if (err) {
           console.error('useProfile fetch error:', err);
           setError(err.message);
         } else {
+          // maybeSingle returns null when the row doesn't exist (vs single
+          // which errors). That keeps the UI happy with a 'Hey there'
+          // fallback instead of throwing PGRST116.
           setProfile((data as Profile) ?? null);
         }
         setLoading(false);
