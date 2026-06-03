@@ -2,10 +2,12 @@
 
 > Your money, finally explained.
 
-Pocket is an AI-powered spending accountability app for Indian students and young
-adults (18–26). It reads bank SMS, auto-categorises every transaction, and helps
-the user understand their money through a conversational chat interface, smart
-nudges, and a monthly **Spending Personality** card.
+Pocket is an AI-powered spending accountability app for young adults (18–26)
+**anywhere in the world**. Each user picks their own currency (USD, EUR, GBP,
+JPY, INR, and many more). It reads bank notification messages, auto-categorises
+every transaction, and helps the user understand their money through a
+conversational chat interface, smart nudges, and a monthly **Spending
+Personality** card.
 
 This repo is a personal project by [@Nidhi-2001](https://github.com/Nidhi-2001),
 built openly. It is not production yet. Contributions and feedback are welcome
@@ -213,11 +215,13 @@ Pocket/
 
 These are non-negotiable. If a change violates one of these, the change is wrong.
 
-1. **All money is stored as paise** (`integer`, ₹1 = 100 paise). Convert at the
-   UI boundary using `lib/formatters.ts → formatCurrency`. Never store rupees
-   as floats — floating-point math + money = bugs.
-2. **All dates and times are in IST (UTC+5:30).** Use
-   `lib/formatters.ts → formatDateIST` for any user-facing date string.
+1. **All money is stored as integer minor units of the user's chosen currency**
+   (cents for USD, paise for INR, yen for JPY since JPY has no minor unit, etc.).
+   Convert at the UI boundary using `lib/currency.ts → formatMoney(minor, code)`.
+   Never store major-unit floats — floating-point math + money = bugs.
+2. **All dates and times are in the user's local timezone** when displayed.
+   `lib/formatters.ts → formatDate` uses the device locale; the LLM emits
+   ISO 8601 with offset, so different users can be in different zones.
 3. **Categories are exactly:** `Food | Transport | Shopping | Entertainment | Other`.
    Enforced by a check constraint on `public.transactions.category`. Do not add
    or rename categories without a migration.

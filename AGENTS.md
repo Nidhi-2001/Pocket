@@ -32,8 +32,9 @@ Breaking any of these is a bug, even if tests pass.
 
 | # | Rule                                                                          |
 | - | ----------------------------------------------------------------------------- |
-| 1 | All monetary amounts stored as **paise** (integer, ₹1 = 100). Never floats.   |
-| 2 | All user-facing dates in **IST (UTC+5:30)** via `lib/formatters.ts`.          |
+| 1 | All monetary amounts stored as integer **minor units of the user's currency** (cents, paise, yen-as-whole, etc. — see `lib/currency.ts`). Never floats. |
+| 2 | Display money via `formatCurrency(minorUnits, currencyCode)`. The currency code comes from `useCurrency()` which reads the user's profile via context. |
+| 3 | Dates displayed in the **device's local timezone** via `formatDate` / `formatDateOnly`. Edge functions return ISO 8601 with offset. |
 | 3 | Categories: exactly `Food / Transport / Shopping / Entertainment / Other`.   |
 | 4 | RLS is enabled on every public table. New tables must enable RLS + policies. |
 | 5 | The React Native bundle never calls an AI provider directly — only Supabase Edge Functions do. |

@@ -5,7 +5,7 @@ const benefits = [
   {
     emoji: '✅',
     title: 'Only your bank SMS',
-    body: 'Messages from HDFC, ICICI, SBI, Axis and similar. Never your personal chats.',
+    body: 'Bank transaction notifications only. We ignore personal chats, OTPs, and marketing messages.',
   },
   {
     emoji: '🔒',

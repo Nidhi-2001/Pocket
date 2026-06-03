@@ -1,22 +1,14 @@
 // supabase/functions/personality/index.ts
 //
 // Generates a "Spending Personality" card for each user from their previous
-// month's transactions and writes it into public.personalities.
+// month's transactions and writes it into public.personalities. Currency-aware.
 //
-// Same dual-mode auth as goal-nudge:
-//
-//   1) Cron / batch mode (Bearer = SUPABASE_SERVICE_ROLE_KEY):
-//      - Without body                                  → all profiles
-//      - With body { user_id: "<uuid>" }               → only that user
-//      - With body { month: "YYYY-MM" }                → override target month
-//
-//   2) User mode (Bearer = user JWT):
-//      - Always scoped to the calling user.
+// Dual-mode auth (same as goal-nudge):
+//   1) Cron / batch mode (Bearer = SUPABASE_SERVICE_ROLE_KEY)
+//   2) User mode (Bearer = user JWT)
 //
 // Target month defaults to LAST calendar month. The personalities table
 // has unique(user_id, month) so re-running is idempotent (we upsert).
-//
-// Response: { processed, results: [{ user_id, success?, error?, ... }] }
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
@@ -31,6 +23,7 @@ const CORS_HEADERS = {
 interface ProfileLite {
   id: string;
   name: string;
+  currency: string;
 }
 
 interface TxLite {
@@ -41,34 +34,47 @@ interface TxLite {
   transacted_at: string;
 }
 
-const SYSTEM_PROMPT = `You generate a "Spending Personality" card for a money-tracking app's user, based on ONE month of their transactions.
+interface CurrencyInfo {
+  symbol: string;
+  name: string;
+  decimals: number;
+  locale: string;
+}
+
+const CURRENCY_INFO: Record<string, CurrencyInfo> = {
+  USD: { symbol: '$',  name: 'US Dollar',         decimals: 2, locale: 'en-US' },
+  EUR: { symbol: '€',  name: 'Euro',              decimals: 2, locale: 'de-DE' },
+  GBP: { symbol: '£',  name: 'British Pound',     decimals: 2, locale: 'en-GB' },
+  JPY: { symbol: '¥',  name: 'Japanese Yen',      decimals: 0, locale: 'ja-JP' },
+  INR: { symbol: '₹',  name: 'Indian Rupee',      decimals: 2, locale: 'en-IN' },
+  CNY: { symbol: '¥',  name: 'Chinese Yuan',      decimals: 2, locale: 'zh-CN' },
+  AUD: { symbol: 'A$', name: 'Australian Dollar', decimals: 2, locale: 'en-AU' },
+  CAD: { symbol: 'C$', name: 'Canadian Dollar',   decimals: 2, locale: 'en-CA' },
+  CHF: { symbol: 'Fr', name: 'Swiss Franc',       decimals: 2, locale: 'de-CH' },
+  SGD: { symbol: 'S$', name: 'Singapore Dollar',  decimals: 2, locale: 'en-SG' },
+  KRW: { symbol: '₩',  name: 'Korean Won',        decimals: 0, locale: 'ko-KR' },
+  AED: { symbol: 'د.إ',name: 'UAE Dirham',        decimals: 2, locale: 'en-AE' },
+};
+
+function buildSystemPrompt(code: string): string {
+  const info = CURRENCY_INFO[code] ?? CURRENCY_INFO.USD;
+  return `You generate a "Spending Personality" card for a money-tracking app's user, based on ONE month of their transactions.
+
+The user's currency is ${info.name} (${code}). Format all money using ${info.symbol} and locale conventions for ${code}.
 
 Output ONE JSON object with EXACTLY these fields:
 {
   "type": short snake_case slug, e.g. "weekend_splurger" | "food_explorer" | "savings_machine" | "balanced_spender" | "shopping_specialist" | "transport_traveler" | "entertainment_enthusiast" | "minimalist" | "social_butterfly",
   "title": string, max 40 chars, fun and slightly affectionate (e.g. "The Weekend Splurger"),
   "emoji": single emoji that captures the vibe,
-  "insights": string[] — 2 or 3 specific observations citing ACTUAL numbers from the data (₹ amounts, merchants, day patterns),
+  "insights": string[] — 2 or 3 specific observations citing ACTUAL numbers from the data,
   "actions": string[] — 1 or 2 light, friendly suggestions. Not lectures.
 }
 
-Voice: warm, observational friend. Specific over generic. Mention real merchants, real ₹ amounts (Indian comma format ₹1,299). Don't moralise. Don't say "you should save more" — say something concrete instead.
-
-Example output:
-{
-  "type": "weekend_splurger",
-  "title": "The Weekend Splurger",
-  "emoji": "🎉",
-  "insights": [
-    "Your Saturdays cost ₹1,800 on average — almost half your weekly outflow",
-    "Top weekend merchants: Swiggy (₹2,200), BookMyShow (₹1,100), Uber (₹950)"
-  ],
-  "actions": [
-    "A ₹2,500 weekend cap would free up ₹3,000/month for your Tokyo goal"
-  ]
-}
+Voice: warm, observational friend. Specific over generic. Mention real merchants, real money amounts. Don't moralise.
 
 Output the JSON object only — no markdown, no other text.`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -117,13 +123,12 @@ Deno.serve(async (req) => {
       targetUserIds = [user.id];
     }
 
-    // Pick the target month. Default: last calendar month.
     const month = pickTargetMonth(body?.month);
-    const monthStart = new Date(`${month}-01T00:00:00+05:30`);
+    const monthStart = new Date(`${month}-01T00:00:00Z`);
     const monthEnd = new Date(monthStart);
     monthEnd.setMonth(monthEnd.getMonth() + 1);
 
-    let profileQuery = admin.from('profiles').select('id, name');
+    let profileQuery = admin.from('profiles').select('id, name, currency');
     if (targetUserIds) profileQuery = profileQuery.in('id', targetUserIds);
     const { data: profiles, error: profErr } = await profileQuery;
     if (profErr) {
@@ -162,7 +167,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
               model: 'llama-3.3-70b-versatile',
               messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'system', content: buildSystemPrompt(p.currency ?? 'USD') },
                 { role: 'user', content: userBlob },
               ],
               response_format: { type: 'json_object' },
@@ -211,8 +216,6 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Upsert on (user_id, month). Re-running for the same user/month
-        // simply replaces the row.
         const { error: upsertErr } = await admin
           .from('personalities')
           .upsert(
@@ -262,17 +265,16 @@ function pickTargetMonth(override?: string): string {
   if (typeof override === 'string' && /^\d{4}-\d{2}$/.test(override)) {
     return override;
   }
-  // Default: previous calendar month relative to "now in IST".
   const now = new Date();
-  const istNow = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
-  istNow.setUTCDate(1);
-  istNow.setUTCMonth(istNow.getUTCMonth() - 1);
-  const y = istNow.getUTCFullYear();
-  const m = String(istNow.getUTCMonth() + 1).padStart(2, '0');
+  now.setUTCDate(1);
+  now.setUTCMonth(now.getUTCMonth() - 1);
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, '0');
   return `${y}-${m}`;
 }
 
 function formatUserBlob(p: ProfileLite, txs: TxLite[], month: string): string {
+  const info = CURRENCY_INFO[p.currency] ?? CURRENCY_INFO.USD;
   const debits = txs.filter((t) => t.transaction_type === 'debit');
   const totalSpent = debits.reduce((s, t) => s + t.amount, 0);
 
@@ -285,31 +287,29 @@ function formatUserBlob(p: ProfileLite, txs: TxLite[], month: string): string {
 
   const catLines = Object.entries(byCategory)
     .sort((a, b) => b[1] - a[1])
-    .map(([c, v]) => `  ${c}: ${formatRupees(v)}`)
+    .map(([c, v]) => `  ${c}: ${formatMoney(v, info, p.currency)}`)
     .join('\n');
 
   const topMerchants = Object.entries(byMerchant)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([m, v]) => `  ${m}: ${formatRupees(v)}`)
+    .map(([m, v]) => `  ${m}: ${formatMoney(v, info, p.currency)}`)
     .join('\n');
 
-  // Day-of-week pattern
-  const dowTotals = [0, 0, 0, 0, 0, 0, 0]; // Sun-Sat in IST
+  const dowTotals = [0, 0, 0, 0, 0, 0, 0];
   for (const t of debits) {
-    const dt = new Date(t.transacted_at);
-    const dow = new Date(dt.getTime() + 5.5 * 60 * 60 * 1000).getUTCDay();
-    dowTotals[dow] += t.amount;
+    dowTotals[new Date(t.transacted_at).getUTCDay()] += t.amount;
   }
   const dowLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const dowLines = dowTotals
-    .map((v, i) => `  ${dowLabels[i]}: ${formatRupees(v)}`)
+    .map((v, i) => `  ${dowLabels[i]}: ${formatMoney(v, info, p.currency)}`)
     .join('\n');
 
   return `User: ${p.name}
+Currency: ${info.name} (${p.currency})
 Month analysed: ${month}
 Number of transactions (debits): ${debits.length}
-Total spent (debits): ${formatRupees(totalSpent)}
+Total spent (debits): ${formatMoney(totalSpent, info, p.currency)}
 
 By category:
 ${catLines || '  (none)'}
@@ -321,14 +321,14 @@ By day of week:
 ${dowLines}`;
 }
 
-function formatRupees(paise: number): string {
-  return (
-    '₹' +
-    (paise / 100).toLocaleString('en-IN', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-  );
+function formatMoney(minorUnits: number, info: CurrencyInfo, code: string): string {
+  const major = minorUnits / Math.pow(10, info.decimals);
+  return new Intl.NumberFormat(info.locale, {
+    style: 'currency',
+    currency: code,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: info.decimals,
+  }).format(major);
 }
 
 function json(body: unknown, status = 200): Response {

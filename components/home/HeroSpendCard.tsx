@@ -1,9 +1,10 @@
 import { Text, View } from 'react-native';
+import { useCurrency } from '../../hooks/useCurrency';
 import { formatCurrency } from '../../lib/formatters';
 
 interface HeroSpendCardProps {
-  spent: number; // paise
-  budget: number; // paise
+  spent: number; // minor units
+  budget: number; // minor units
 }
 
 /**
@@ -11,6 +12,7 @@ interface HeroSpendCardProps {
  * against the user's monthly budget, with a progress bar.
  */
 export function HeroSpendCard({ spent, budget }: HeroSpendCardProps) {
+  const currency = useCurrency();
   const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
   const overBudget = spent > budget;
   const remaining = Math.max(0, budget - spent);
@@ -24,7 +26,7 @@ export function HeroSpendCard({ spent, budget }: HeroSpendCardProps) {
         This month&apos;s spend
       </Text>
       <Text className="text-white text-4xl font-bold mb-5">
-        {formatCurrency(spent)}
+        {formatCurrency(spent, currency)}
       </Text>
 
       <View
@@ -42,8 +44,8 @@ export function HeroSpendCard({ spent, budget }: HeroSpendCardProps) {
 
       <Text className="text-sm" style={{ color: '#EEF2FF' }}>
         {overBudget
-          ? `${formatCurrency(spent - budget)} over budget`
-          : `${formatCurrency(remaining)} left of ${formatCurrency(budget)} budget`}
+          ? `${formatCurrency(spent - budget, currency)} over budget`
+          : `${formatCurrency(remaining, currency)} left of ${formatCurrency(budget, currency)} budget`}
       </Text>
     </View>
   );

@@ -122,7 +122,7 @@ export default function HomeTab() {
       <View className="px-6 mb-6">
         <HeroSpendCard
           spent={monthlySpent}
-          budget={profile?.monthly_budget ?? 2_000_000}
+          budget={profile?.monthly_budget ?? 0}
         />
       </View>
 
@@ -213,7 +213,7 @@ export default function HomeTab() {
               setError(null);
               setParseHint(null);
             }}
-            placeholder="Dear UPI user A/C *1234 debited Rs.299..."
+            placeholder="e.g. Your card was charged $42.99 at Starbucks on 2026-06-03…"
             placeholderTextColor="#9CA3AF"
             multiline
             numberOfLines={4}

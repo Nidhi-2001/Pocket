@@ -2,6 +2,9 @@ import '../global.css';
 import type { Session } from '@supabase/supabase-js';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { CurrencyContext } from '../hooks/useCurrency';
+import { useProfile } from '../hooks/useProfile';
+import { DEFAULT_CURRENCY } from '../lib/currency';
 import { supabase } from '../lib/supabase';
 
 export default function RootLayout() {
@@ -9,6 +12,7 @@ export default function RootLayout() {
   const [initialized, setInitialized] = useState(false);
   const segments = useSegments();
   const router = useRouter();
+  const { profile } = useProfile();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -27,14 +31,14 @@ export default function RootLayout() {
     if (!initialized) return;
     const inAuthGroup = segments[0] === '(auth)';
 
-    // Only enforce auth on protected routes — kick unauthenticated users out
-    // of the app. We deliberately do NOT auto-redirect signed-in users away
-    // from (auth) routes: the OTP screen explicitly navigates to /setup, and
-    // a guard that fires on the same auth-state event would race and win.
     if (!session && !inAuthGroup) {
       router.replace('/welcome');
     }
   }, [session, initialized, segments, router]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <CurrencyContext.Provider value={profile?.currency ?? DEFAULT_CURRENCY}>
+      <Stack screenOptions={{ headerShown: false }} />
+    </CurrencyContext.Provider>
+  );
 }

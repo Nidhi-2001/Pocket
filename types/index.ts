@@ -1,15 +1,18 @@
+import type { CurrencyCode } from '../lib/currency';
+
 export interface Profile {
   id: string;
   name: string;
   phone: string;
-  monthly_budget: number;
+  monthly_budget: number; // in minor units of `currency`
+  currency: CurrencyCode | string;
   created_at: string;
 }
 
 export interface Transaction {
   id: string;
   user_id: string;
-  amount: number; // in paise
+  amount: number; // in minor units of the user's currency
   merchant: string;
   category: 'Food' | 'Transport' | 'Shopping' | 'Entertainment' | 'Other';
   transaction_type: 'debit' | 'credit';
@@ -32,7 +35,7 @@ export interface Goal {
   user_id: string;
   title: string;
   emoji: string;
-  target_amount: number; // in paise
+  target_amount: number; // in minor units
   current_amount: number;
   deadline?: string;
   status: 'active' | 'completed' | 'paused';

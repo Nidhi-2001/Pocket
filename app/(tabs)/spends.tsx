@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { DonutChart, type DonutSegment } from '../../components/spends/DonutChart';
 import { categories, type CategoryKey } from '../../constants/theme';
+import { useCurrency } from '../../hooks/useCurrency';
 import { useTransactions } from '../../hooks/useTransactions';
 import { formatCurrency } from '../../lib/formatters';
 
@@ -11,6 +12,7 @@ interface CategorySummary extends DonutSegment {
 }
 
 export default function SpendsTab() {
+  const currency = useCurrency();
   const { transactions, loading } = useTransactions({
     monthOnly: true,
     debitsOnly: true,
@@ -58,7 +60,7 @@ export default function SpendsTab() {
         ) : (
           <DonutChart
             segments={summary}
-            centerLabel={formatCurrency(totalSpent)}
+            centerLabel={formatCurrency(totalSpent, currency)}
             centerSubLabel="Spent"
           />
         )}
@@ -102,7 +104,7 @@ export default function SpendsTab() {
                     </Text>
                   </View>
                   <Text className="text-base font-semibold text-text-primary">
-                    {formatCurrency(seg.value)}
+                    {formatCurrency(seg.value, currency)}
                   </Text>
                 </View>
               );

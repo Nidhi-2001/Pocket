@@ -9,7 +9,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { formatCurrency, formatDateOnlyIST } from '../../lib/formatters';
+import { useCurrency } from '../../hooks/useCurrency';
+import { getCurrency, majorToMinor } from '../../lib/currency';
+import { formatCurrency, formatDateOnly } from '../../lib/formatters';
 import { supabase } from '../../lib/supabase';
 import type { Goal } from '../../types';
 
@@ -19,6 +21,8 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, onChange }: GoalCardProps) {
+  const currency = useCurrency();
+  const cur = getCurrency(currency);
   const [addText, setAddText] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -29,10 +33,10 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
       : 0;
 
   async function addSavings() {
-    const rupees = parseInt(addText, 10);
-    if (!rupees || rupees <= 0) return;
+    const major = parseInt(addText, 10);
+    if (!major || major <= 0) return;
     setBusy(true);
-    const newAmount = goal.current_amount + rupees * 100;
+    const newAmount = goal.current_amount + majorToMinor(major, currency);
     const newStatus =
       newAmount >= goal.target_amount ? 'completed' : goal.status;
     const { error } = await supabase
@@ -86,10 +90,10 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
       </View>
 
       <Text className="text-2xl font-bold text-text-primary">
-        {formatCurrency(goal.current_amount)}
+        {formatCurrency(goal.current_amount, currency)}
       </Text>
       <Text className="text-sm text-text-secondary mb-3">
-        of {formatCurrency(goal.target_amount)} ({progress.toFixed(0)}%)
+        of {formatCurrency(goal.target_amount, currency)} ({progress.toFixed(0)}%)
       </Text>
 
       <View className="h-2 bg-background border border-border rounded-full overflow-hidden mb-3">
@@ -104,7 +108,7 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
 
       {goal.deadline && (
         <Text className="text-xs text-text-muted mb-3">
-          Deadline · {formatDateOnlyIST(goal.deadline)}
+          Deadline · {formatDateOnly(goal.deadline)}
         </Text>
       )}
 
@@ -115,16 +119,19 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
         </View>
       ) : (
         <View className="flex-row gap-2">
-          <TextInput
-            value={addText}
-            onChangeText={(t) => setAddText(t.replace(/\D/g, ''))}
-            placeholder="Add ₹ saved…"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="number-pad"
-            inputMode="numeric"
-            editable={!busy}
-            className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm text-text-primary"
-          />
+          <View className="flex-1 flex-row items-center bg-background border border-border rounded-xl px-3">
+            <Text className="text-sm text-text-muted mr-1">{cur.symbol}</Text>
+            <TextInput
+              value={addText}
+              onChangeText={(t) => setAddText(t.replace(/\D/g, ''))}
+              placeholder={`Add ${cur.symbol} saved…`}
+              placeholderTextColor="#9CA3AF"
+              keyboardType="number-pad"
+              inputMode="numeric"
+              editable={!busy}
+              className="flex-1 py-2 text-sm text-text-primary"
+            />
+          </View>
           <Pressable
             onPress={addSavings}
             disabled={busy || !addText}

@@ -11,7 +11,8 @@ import {
   View,
 } from 'react-native';
 import { categories, type CategoryKey } from '../../constants/theme';
-import { formatCurrency, formatDateIST } from '../../lib/formatters';
+import { useCurrency } from '../../hooks/useCurrency';
+import { formatCurrency, formatDate } from '../../lib/formatters';
 import { supabase } from '../../lib/supabase';
 import type { Transaction } from '../../types';
 
@@ -19,6 +20,7 @@ const CATEGORY_KEYS = Object.keys(categories) as CategoryKey[];
 
 export default function TransactionDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const currency = useCurrency();
   const [tx, setTx] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -151,7 +153,7 @@ export default function TransactionDetail() {
           }`}
         >
           {isDebit ? '-' : '+'}
-          {formatCurrency(tx.amount)}
+          {formatCurrency(tx.amount, currency)}
         </Text>
         <Text className="text-lg text-text-secondary">{tx.merchant}</Text>
       </View>
@@ -201,7 +203,7 @@ export default function TransactionDetail() {
             value={tx.transaction_type === 'debit' ? 'Debit (money out)' : 'Credit (money in)'}
           />
           <View className="h-px bg-border mx-4" />
-          <Field label="When" value={formatDateIST(tx.transacted_at)} />
+          <Field label="When" value={formatDate(tx.transacted_at)} />
         </View>
       </View>
 

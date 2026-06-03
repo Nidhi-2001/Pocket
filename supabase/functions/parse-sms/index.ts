@@ -1,12 +1,17 @@
 // supabase/functions/parse-sms/index.ts
 //
-// Deno edge function: takes one Indian bank SMS, sends it to Groq's Llama 3.3
-// 70B with a structured-output system prompt, validates the result, and writes
-// a transaction row scoped to the calling user (RLS-enforced via the user's
-// own JWT).
+// Deno edge function: takes one bank transaction notification (SMS body)
+// from anywhere in the world, sends it to Groq's Llama 3.3 70B with a
+// structured-output system prompt, validates the result, and writes a
+// transaction row scoped to the calling user (RLS-enforced).
 //
-// Returns 200 + the inserted row on success, 200 + { valid: false } if the SMS
-// isn't a transaction, 401/4xx/5xx on real errors.
+// Currency-aware: the function fetches the user's profile.currency and
+// tells the LLM to return amounts in MINOR UNITS of that currency
+// (cents for USD, paise for INR, yen for JPY since JPY has no minor unit).
+// Ambiguous bare numbers are interpreted using the user's currency.
+//
+// Returns 200 + the inserted row on success, 200 + { valid: false } if
+// the message isn't a transaction notification, 4xx/5xx on real errors.
 //
 // Env vars required (set via `npx supabase secrets set GROQ_API_KEY=...`):
 //   GROQ_API_KEY        — from https://console.groq.com
@@ -37,82 +42,74 @@ interface ParsedSms {
   transacted_at: string;
 }
 
-const SYSTEM_PROMPT = `You parse Indian bank notification SMS into structured transaction data.
+// Currency info embedded in the function so the prompt can describe minor
+// units accurately to the LLM. Mirrors lib/currency.ts in the app.
+const CURRENCY_INFO: Record<string, { symbol: string; name: string; decimals: number }> = {
+  USD: { symbol: '$',  name: 'US Dollar',         decimals: 2 },
+  EUR: { symbol: '€',  name: 'Euro',              decimals: 2 },
+  GBP: { symbol: '£',  name: 'British Pound',     decimals: 2 },
+  JPY: { symbol: '¥',  name: 'Japanese Yen',      decimals: 0 },
+  INR: { symbol: '₹',  name: 'Indian Rupee',      decimals: 2 },
+  CNY: { symbol: '¥',  name: 'Chinese Yuan',      decimals: 2 },
+  AUD: { symbol: 'A$', name: 'Australian Dollar', decimals: 2 },
+  CAD: { symbol: 'C$', name: 'Canadian Dollar',   decimals: 2 },
+  CHF: { symbol: 'Fr', name: 'Swiss Franc',       decimals: 2 },
+  SGD: { symbol: 'S$', name: 'Singapore Dollar',  decimals: 2 },
+  KRW: { symbol: '₩',  name: 'Korean Won',        decimals: 0 },
+  AED: { symbol: 'د.إ',name: 'UAE Dirham',        decimals: 2 },
+};
+
+function buildSystemPrompt(code: string): string {
+  const info = CURRENCY_INFO[code] ?? CURRENCY_INFO.USD;
+  const multiplier = Math.pow(10, info.decimals);
+  const example1 = info.decimals > 0
+    ? `"${info.symbol}29.99" → ${Math.round(29.99 * multiplier)}`
+    : `"${info.symbol}3000" → ${3000 * multiplier}`;
+  return `You parse bank transaction notification messages (SMS, email, app push) from anywhere in the world into structured data.
+
+The user's currency is ${info.name} (${code}, symbol ${info.symbol}, ${info.decimals} decimal places).
 
 Output ONLY a JSON object with EXACTLY these fields:
 {
   "valid": boolean,
-  "amount": integer (in PAISE — that is, rupees * 100),
+  "amount": integer in MINOR UNITS of the user's currency (major units × ${multiplier}),
   "merchant": string (cleaned merchant name in Title Case),
   "category": "Food" | "Transport" | "Shopping" | "Entertainment" | "Other",
   "transaction_type": "debit" | "credit",
-  "transacted_at": ISO 8601 timestamp in IST, e.g. "2026-03-24T14:30:00+05:30"
+  "transacted_at": ISO 8601 timestamp with timezone offset, e.g. "2026-03-24T14:30:00-04:00"
 }
 
 Set "valid": false (and amount: 0, merchant: "", category: "Other",
-transaction_type: "debit", transacted_at: "2026-01-01T00:00:00+05:30") if the
-SMS is NOT a real transaction notification — that is, if it is any of:
-- OTP / verification codes
-- Marketing or promotional SMS
-- Balance inquiries / "available balance is" alerts
-- Cheque alerts
-- Auto-debit / standing-instruction reminders
-- Failed transaction notifications
-- Statement notifications
+transaction_type: "debit", transacted_at: "2026-01-01T00:00:00+00:00") for
+non-transaction messages: OTPs, marketing, balance alerts, statement
+notifications, failed-transaction alerts, cheque alerts.
 
-Amount conversion:
-- "Rs.299" → 29900
-- "Rs.299.50" → 29950
-- "Rs.1,234.56" → 123456
-- "INR 50,000.00" → 5000000
+Amount handling:
+- The user's currency is ${code}. Interpret bare numbers as ${code} unless the message clearly states another currency.
+- Convert to MINOR UNITS by multiplying by ${multiplier}. ${example1}.
+- Strip thousand separators (commas, dots in European format, etc.) before multiplying.
 
 Merchant cleaning:
-- Strip "LIMITED", "LTD", "PVT", "PRIVATE", "INC", "INDIA", "SERVICES",
-  "TECHNOLOGIES" etc. Strip reference numbers.
-- "ZOMATO LIMITED" → "Zomato"
-- "AMAZON SELLER SVCS PVT LTD" → "Amazon"
-- "UBER INDIA SYSTEMS PRIVATE LIMITED" → "Uber"
-- "BIG BASKET" → "BigBasket"
-- If you cannot identify the merchant clearly, use "Unknown".
+- Title Case. Strip generic suffixes like LIMITED, LTD, PVT, PRIVATE, INC, LLC, GMBH, CO, SERVICES, TECHNOLOGIES.
+- Strip reference numbers, transaction IDs, and account fragments.
+- Examples: "ZOMATO LIMITED" → "Zomato", "AMAZON SELLER SVCS PVT LTD" → "Amazon", "STARBUCKS COFFEE #1234" → "Starbucks".
+- If unidentifiable, use "Unknown".
 
-Category mapping (best guess):
-- Food: restaurants, food delivery (Zomato, Swiggy), grocery (BigBasket,
-  Blinkit, DMart), cafes (Starbucks, CCD).
-- Transport: ride-share (Uber, Ola, Rapido), fuel (HP, IOC, Shell, BPCL),
-  metro, auto, parking, vehicle service.
-- Shopping: e-commerce (Amazon, Flipkart, Myntra, Ajio, Nykaa), retail,
-  fashion, electronics, beauty, books.
-- Entertainment: streaming (Netflix, Spotify, Hotstar, Prime Video, JioSaavn),
-  gaming, movies (BookMyShow, PVR), bars / pubs, events.
-- Other: salary, transfers (NEFT/IMPS/UPI to a person), utilities (electricity,
-  water, internet, mobile recharge), rent, EMI, insurance, medical, fees,
-  cash withdrawals, and anything you cannot confidently place above.
+Category mapping (best guess based on the merchant):
+- Food: restaurants, food delivery, grocery, cafes, bars/pubs with food focus.
+- Transport: ride-share, taxi, fuel/gas, public transit, parking, vehicle service, fares.
+- Shopping: e-commerce, retail, fashion, electronics, beauty, books, home goods.
+- Entertainment: streaming, gaming, movies, concerts, sports, theme parks, bars/pubs without food focus.
+- Other: salary/income, bank transfers, utilities, rent, EMI/mortgage, insurance, medical, fees, taxes, withdrawals, anything unidentifiable.
 
-Dates and times:
-- Indian SMS use DD-MMM-YY, DD-MMM-YYYY, DD/MM/YYYY, or DD-MM-YYYY. Treat
-  ambiguous DD/MM dates as Indian (day first).
-- If only date is present, use 12:00:00 IST.
-- "24-MAR-26" → "2026-03-24T..."  ("26" means 2026 in our project timeline)
-- Output MUST be valid ISO 8601 ending in "+05:30".
-
-Examples (study these patterns carefully):
-
-INPUT: "Dear UPI user A/C *1234 debited Rs.299.00 on 24-MAR-26 trf to ZOMATO LTD Refno 6022334455 not you? call 1800XXX"
-OUTPUT: {"valid":true,"amount":29900,"merchant":"Zomato","category":"Food","transaction_type":"debit","transacted_at":"2026-03-24T12:00:00+05:30"}
-
-INPUT: "INR 50000.00 credited to A/C *5678 on 01-MAY-26 from SALARY-ACME INC. Avbl Bal INR 65000.00."
-OUTPUT: {"valid":true,"amount":5000000,"merchant":"Acme","category":"Other","transaction_type":"credit","transacted_at":"2026-05-01T12:00:00+05:30"}
-
-INPUT: "Rs.450 debited from A/C **5432 on 15-MAR-26 14:32 toward UBER INDIA SYSTEMS PVT LTD. Refno: AX9876"
-OUTPUT: {"valid":true,"amount":45000,"merchant":"Uber","category":"Transport","transaction_type":"debit","transacted_at":"2026-03-15T14:32:00+05:30"}
-
-INPUT: "Your OTP for ICICI Net Banking is 567832. Valid for 5 mins. Do not share."
-OUTPUT: {"valid":false,"amount":0,"merchant":"","category":"Other","transaction_type":"debit","transacted_at":"2026-01-01T00:00:00+05:30"}
-
-INPUT: "OFFER: Get 10% cashback on Big Bazaar purchases this weekend! Use code BIGBAZAAR10. T&C apply."
-OUTPUT: {"valid":false,"amount":0,"merchant":"","category":"Other","transaction_type":"debit","transacted_at":"2026-01-01T00:00:00+05:30"}
+Date/time handling:
+- Extract the date and time as they appear. Common formats: MM/DD/YYYY (US), DD/MM/YYYY (most other places), DD-MMM-YY, ISO 8601.
+- If only the date is present, use 12:00:00 local time.
+- Include the local timezone offset if the message includes a location/zone clue; otherwise use the calling user's region-of-currency default (e.g., -05:00 for US, +05:30 for India, +09:00 for Japan, +00:00 if unsure).
+- Output MUST be valid ISO 8601 with offset.
 
 Output the JSON object only — no commentary, no markdown code fence, no surrounding text.`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -128,16 +125,12 @@ Deno.serve(async (req) => {
       return json({ error: 'Missing Authorization header' }, 401);
     }
 
-    // Supabase client scoped to the calling user — RLS will enforce ownership.
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } },
     );
 
-    // Extract the raw JWT and validate it explicitly. Passing the token to
-    // getUser() does a server-side verification call and avoids any quirk
-    // where createClient's global header doesn't propagate into auth.getUser.
     const jwt = authHeader.replace(/^Bearer\s+/i, '');
     const {
       data: { user },
@@ -149,7 +142,6 @@ Deno.serve(async (req) => {
         {
           error: 'Invalid auth',
           detail: userError?.message ?? 'no user resolved from JWT',
-          tokenPrefix: jwt.slice(0, 12) + '…',
         },
         401,
       );
@@ -170,6 +162,14 @@ Deno.serve(async (req) => {
       return json({ error: 'Server misconfigured: missing GROQ_API_KEY' }, 500);
     }
 
+    // Fetch the user's chosen currency for prompt-side context.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('currency')
+      .maybeSingle();
+    const currencyCode: string =
+      (profile?.currency as string | undefined) ?? 'USD';
+
     const groqRes = await fetch(
       'https://api.groq.com/openai/v1/chat/completions',
       {
@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: buildSystemPrompt(currencyCode) },
             { role: 'user', content: smsText },
           ],
           response_format: { type: 'json_object' },
@@ -218,11 +218,11 @@ Deno.serve(async (req) => {
     }
 
     if (!parsed.valid) {
-      return json({ valid: false, message: 'Not a transaction SMS' });
+      return json({ valid: false, message: 'Not a transaction notification' });
     }
 
-    // Sanity-clamp the amount: 1 paise to ₹10 crore (10^9 paise).
-    if (parsed.amount <= 0 || parsed.amount > 1_000_000_000) {
+    // Sanity-clamp the amount: 1 minor unit to 10^10 minor units.
+    if (parsed.amount <= 0 || parsed.amount > 10_000_000_000) {
       return json(
         { error: 'AI returned unreasonable amount', amount: parsed.amount },
         502,
@@ -244,8 +244,8 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
-      // Postgres 23505 = unique_violation. Our dedup index makes a second
-      // import of the same (user, amount, merchant, transacted_at) idempotent.
+      // 23505 = unique_violation. Our dedup index makes re-importing the
+      // same (user, amount, merchant, transacted_at) idempotent.
       if (insertError.code === '23505') {
         return json({
           valid: true,

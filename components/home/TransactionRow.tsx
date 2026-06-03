@@ -1,7 +1,8 @@
 import { Link } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
+import { useCurrency } from '../../hooks/useCurrency';
 import { categories } from '../../constants/theme';
-import { formatCurrency, formatDateIST } from '../../lib/formatters';
+import { formatCurrency, formatDate } from '../../lib/formatters';
 import type { Transaction } from '../../types';
 
 interface TransactionRowProps {
@@ -9,6 +10,7 @@ interface TransactionRowProps {
 }
 
 export function TransactionRow({ tx }: TransactionRowProps) {
+  const currency = useCurrency();
   const meta = categories[tx.category];
   const isDebit = tx.transaction_type === 'debit';
   return (
@@ -28,7 +30,7 @@ export function TransactionRow({ tx }: TransactionRowProps) {
             {tx.merchant}
           </Text>
           <Text className="text-xs text-text-muted" numberOfLines={1}>
-            {tx.category} · {formatDateIST(tx.transacted_at, 'd MMM, h:mm a')}
+            {tx.category} · {formatDate(tx.transacted_at)}
           </Text>
         </View>
         <Text
@@ -37,7 +39,7 @@ export function TransactionRow({ tx }: TransactionRowProps) {
           }`}
         >
           {isDebit ? '-' : '+'}
-          {formatCurrency(tx.amount)}
+          {formatCurrency(tx.amount, currency)}
         </Text>
       </Pressable>
     </Link>

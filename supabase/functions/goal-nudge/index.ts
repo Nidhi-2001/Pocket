@@ -1,23 +1,15 @@
 // supabase/functions/goal-nudge/index.ts
 //
 // Generates a friendly nudge for each user based on their recent spending
-// and active goals, and writes it into public.nudges.
+// and active goals, and writes it into public.nudges. Currency-aware —
+// formats and reasons about money in each user's chosen currency.
 //
-// Designed to be invoked TWO ways:
-//
-//   1) Cron / batch mode (Bearer = SUPABASE_SERVICE_ROLE_KEY):
+// Dual-mode auth:
+//   1) Cron mode (Bearer = SUPABASE_SERVICE_ROLE_KEY):
 //      - Without body                       → processes ALL profiles
 //      - With body { user_id: "<uuid>" }    → only that user
-//
-//   2) User mode (Bearer = a user's JWT, as supabase.functions.invoke sends):
-//      - Always processes just the calling user. Used by the app for an
-//        on-demand "give me a nudge now" button.
-//
-// In either mode the function fetches the target user's profile, this-
-// month debits, and active goals, asks Groq for a short nudge in
-// structured JSON, and inserts a public.nudges row.
-//
-// Response: { processed, results: [{ user_id, success?, error?, message? }] }
+//   2) User mode (Bearer = a user's JWT):
+//      - Always processes just the calling user.
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
@@ -33,6 +25,7 @@ interface ProfileLite {
   id: string;
   name: string;
   monthly_budget: number;
+  currency: string;
 }
 
 interface TxLite {
@@ -51,9 +44,35 @@ interface GoalLite {
   deadline: string | null;
 }
 
-const SYSTEM_PROMPT = `You write a single short nudge for a money-tracking app's user.
+interface CurrencyInfo {
+  symbol: string;
+  name: string;
+  decimals: number;
+  locale: string;
+}
+
+const CURRENCY_INFO: Record<string, CurrencyInfo> = {
+  USD: { symbol: '$',  name: 'US Dollar',         decimals: 2, locale: 'en-US' },
+  EUR: { symbol: '€',  name: 'Euro',              decimals: 2, locale: 'de-DE' },
+  GBP: { symbol: '£',  name: 'British Pound',     decimals: 2, locale: 'en-GB' },
+  JPY: { symbol: '¥',  name: 'Japanese Yen',      decimals: 0, locale: 'ja-JP' },
+  INR: { symbol: '₹',  name: 'Indian Rupee',      decimals: 2, locale: 'en-IN' },
+  CNY: { symbol: '¥',  name: 'Chinese Yuan',      decimals: 2, locale: 'zh-CN' },
+  AUD: { symbol: 'A$', name: 'Australian Dollar', decimals: 2, locale: 'en-AU' },
+  CAD: { symbol: 'C$', name: 'Canadian Dollar',   decimals: 2, locale: 'en-CA' },
+  CHF: { symbol: 'Fr', name: 'Swiss Franc',       decimals: 2, locale: 'de-CH' },
+  SGD: { symbol: 'S$', name: 'Singapore Dollar',  decimals: 2, locale: 'en-SG' },
+  KRW: { symbol: '₩',  name: 'Korean Won',        decimals: 0, locale: 'ko-KR' },
+  AED: { symbol: 'د.إ',name: 'UAE Dirham',        decimals: 2, locale: 'en-AE' },
+};
+
+function buildSystemPrompt(code: string): string {
+  const info = CURRENCY_INFO[code] ?? CURRENCY_INFO.USD;
+  return `You write a single short nudge for a money-tracking app's user.
 
 Input: a JSON blob describing one user's name, monthly budget, this-month spending so far, and active savings goals.
+
+The user's currency is ${info.name} (${code}). Format all money using ${info.symbol} and the appropriate locale conventions for ${code}.
 
 Output: ONE JSON object with exactly these fields:
 {
@@ -66,14 +85,10 @@ Choose type:
 - "goal_check" if the user has active goals and progress is notable (good or behind)
 - "weekly_digest" otherwise — a chatty observation about recent spend
 
-Voice: warm friend, not a finance lecturer. Indian comma format (₹1,299). Mention specific numbers. Don't moralise. Don't say "you should". Suggestions are fine.
-
-Examples:
-{ "type": "budget_warning", "message": "You're at ₹14,200 out of ₹20,000 this month — 71%. Three weeks left, ease up on the weekend orders maybe?" }
-{ "type": "goal_check", "message": "Tokyo trip is 30% there. At ₹2,000/week you'll hit ₹50,000 by mid-August — solid pace." }
-{ "type": "weekly_digest", "message": "Spent ₹1,150 on Food this week, mostly Swiggy. Mid-week cooking would save around ₹600/week." }
+Voice: warm friend, not finance lecturer. Mention specific numbers. Don't moralise. Suggestions are fine — "you should" is not.
 
 Output the JSON object only — no markdown, no other text.`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -96,10 +111,7 @@ Deno.serve(async (req) => {
     }
 
     const isServiceRole = authHeader === `Bearer ${SERVICE_ROLE_KEY}`;
-
-    // Service-role client bypasses RLS — used for reading every user's data.
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
     const body = await req.json().catch(() => ({}));
 
     let targetUserIds: string[] | null = null;
@@ -107,9 +119,7 @@ Deno.serve(async (req) => {
     if (isServiceRole) {
       const bodyUid: string | undefined = body?.user_id;
       if (bodyUid) targetUserIds = [bodyUid];
-      // else: leave null → process all profiles below
     } else {
-      // User-JWT mode. Verify and scope to that user only.
       const userClient = createClient(SUPABASE_URL, ANON_KEY, {
         global: { headers: { Authorization: authHeader } },
       });
@@ -127,13 +137,10 @@ Deno.serve(async (req) => {
       targetUserIds = [user.id];
     }
 
-    // Fetch the target profiles (one or all).
     let profileQuery = admin
       .from('profiles')
-      .select('id, name, monthly_budget');
-    if (targetUserIds) {
-      profileQuery = profileQuery.in('id', targetUserIds);
-    }
+      .select('id, name, monthly_budget, currency');
+    if (targetUserIds) profileQuery = profileQuery.in('id', targetUserIds);
     const { data: profiles, error: profErr } = await profileQuery;
     if (profErr) {
       console.error('failed to fetch profiles:', profErr);
@@ -185,7 +192,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
               model: 'llama-3.3-70b-versatile',
               messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'system', content: buildSystemPrompt(p.currency ?? 'USD') },
                 { role: 'user', content: userBlob },
               ],
               response_format: { type: 'json_object' },
@@ -196,10 +203,7 @@ Deno.serve(async (req) => {
         );
 
         if (!groqRes.ok) {
-          results.push({
-            user_id: p.id,
-            error: `groq ${groqRes.status}`,
-          });
+          results.push({ user_id: p.id, error: `groq ${groqRes.status}` });
           continue;
         }
 
@@ -268,6 +272,7 @@ function formatUserBlob(
   goals: GoalLite[],
   now: Date,
 ): string {
+  const info = CURRENCY_INFO[p.currency] ?? CURRENCY_INFO.USD;
   const spent = txs.reduce((s, t) => s + t.amount, 0);
   const pct = p.monthly_budget > 0
     ? Math.round((spent / p.monthly_budget) * 100)
@@ -285,7 +290,7 @@ function formatUserBlob(
   }
   const catLines = Object.entries(byCategory)
     .sort((a, b) => b[1] - a[1])
-    .map(([c, v]) => `  ${c}: ${formatRupees(v)}`)
+    .map(([c, v]) => `  ${c}: ${formatMoney(v, info, p.currency)}`)
     .join('\n');
 
   const goalLines = goals
@@ -294,15 +299,16 @@ function formatUserBlob(
         ? Math.round((g.current_amount / g.target_amount) * 100)
         : 0;
       const dl = g.deadline ? `, deadline ${g.deadline}` : '';
-      return `  ${g.emoji} ${g.title}: ${formatRupees(g.current_amount)} / ${formatRupees(g.target_amount)} (${gpct}%${dl})`;
+      return `  ${g.emoji} ${g.title}: ${formatMoney(g.current_amount, info, p.currency)} / ${formatMoney(g.target_amount, info, p.currency)} (${gpct}%${dl})`;
     })
     .join('\n');
 
   return `User: ${p.name}
+Currency: ${info.name} (${p.currency})
 Today: day ${dayOfMonth} of ${daysInMonth}
-Monthly budget: ${formatRupees(p.monthly_budget)}
-Spent so far this month (debits): ${formatRupees(spent)} (${pct}% of budget)
-Remaining: ${formatRupees(Math.max(0, p.monthly_budget - spent))}
+Monthly budget: ${formatMoney(p.monthly_budget, info, p.currency)}
+Spent so far this month (debits): ${formatMoney(spent, info, p.currency)} (${pct}% of budget)
+Remaining: ${formatMoney(Math.max(0, p.monthly_budget - spent), info, p.currency)}
 
 By category this month:
 ${catLines || '  (no debits this month)'}
@@ -311,14 +317,14 @@ Active goals:
 ${goalLines || '  (none)'}`;
 }
 
-function formatRupees(paise: number): string {
-  return (
-    '₹' +
-    (paise / 100).toLocaleString('en-IN', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-  );
+function formatMoney(minorUnits: number, info: CurrencyInfo, code: string): string {
+  const major = minorUnits / Math.pow(10, info.decimals);
+  return new Intl.NumberFormat(info.locale, {
+    style: 'currency',
+    currency: code,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: info.decimals,
+  }).format(major);
 }
 
 function json(body: unknown, status = 200): Response {

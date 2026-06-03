@@ -1,17 +1,15 @@
 // supabase/functions/chat-agent/index.ts
 //
-// Deno edge function. Takes a conversation history and returns the next
-// assistant message. The assistant is grounded in the caller's actual
-// recent transactions, monthly budget, and per-category month-to-date
-// totals — so it can answer questions like "What did I spend on food
-// this month?" with real numbers from the user's own data.
+// Deno edge function. Conversational money assistant grounded in the user's
+// actual recent transactions, monthly budget, and per-category month-to-date
+// totals. Currency-aware — formats and reasons about money in the user's
+// chosen currency (USD, EUR, INR, JPY, etc.).
 //
-// Provider: Groq (llama-3.3-70b-versatile). Same model + key as
-// parse-sms (set via `npx supabase secrets set GROQ_API_KEY=...`).
+// Provider: Groq (llama-3.3-70b-versatile).
 //
 // Request:  { messages: [{ role: 'user' | 'assistant', content: string }, ...] }
-// Response: { message: { role: 'assistant', content: string } }
-//           or { error: string, ... } with 4xx/5xx status.
+// Response: { message: { role: 'assistant', content: string } } or
+//           { error: string, ... } with 4xx/5xx status.
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
@@ -30,31 +28,57 @@ interface ChatMessage {
 
 interface ProfileLite {
   name: string;
-  monthly_budget: number; // paise
+  monthly_budget: number; // minor units of `currency`
+  currency: string;
 }
 
 interface TransactionLite {
-  amount: number; // paise
+  amount: number; // minor units of the user's currency
   merchant: string;
   category: string;
   transaction_type: 'debit' | 'credit';
   transacted_at: string;
 }
 
-const SYSTEM_PROMPT = `You are Pocket — a friendly money assistant for Indian college students and young professionals (18-26).
+interface CurrencyInfo {
+  symbol: string;
+  name: string;
+  decimals: number;
+  locale: string;
+}
+
+const CURRENCY_INFO: Record<string, CurrencyInfo> = {
+  USD: { symbol: '$',  name: 'US Dollar',         decimals: 2, locale: 'en-US' },
+  EUR: { symbol: '€',  name: 'Euro',              decimals: 2, locale: 'de-DE' },
+  GBP: { symbol: '£',  name: 'British Pound',     decimals: 2, locale: 'en-GB' },
+  JPY: { symbol: '¥',  name: 'Japanese Yen',      decimals: 0, locale: 'ja-JP' },
+  INR: { symbol: '₹',  name: 'Indian Rupee',      decimals: 2, locale: 'en-IN' },
+  CNY: { symbol: '¥',  name: 'Chinese Yuan',      decimals: 2, locale: 'zh-CN' },
+  AUD: { symbol: 'A$', name: 'Australian Dollar', decimals: 2, locale: 'en-AU' },
+  CAD: { symbol: 'C$', name: 'Canadian Dollar',   decimals: 2, locale: 'en-CA' },
+  CHF: { symbol: 'Fr', name: 'Swiss Franc',       decimals: 2, locale: 'de-CH' },
+  SGD: { symbol: 'S$', name: 'Singapore Dollar',  decimals: 2, locale: 'en-SG' },
+  KRW: { symbol: '₩',  name: 'Korean Won',        decimals: 0, locale: 'ko-KR' },
+  AED: { symbol: 'د.إ',name: 'UAE Dirham',        decimals: 2, locale: 'en-AE' },
+};
+
+function buildSystemPrompt(code: string): string {
+  const info = CURRENCY_INFO[code] ?? CURRENCY_INFO.USD;
+  return `You are Pocket — a friendly money assistant for young adults (18-26) managing everyday spending.
 
 You have the user's real recent transactions, monthly budget, and month-to-date breakdown (provided in the next message). Use that data to answer concretely. Never invent numbers or transactions you don't see.
+
+The user's currency is ${info.name} (${code}, symbol ${info.symbol}). Always format money in ${code} — use the symbol ${info.symbol} and the appropriate locale conventions (commas/decimals).
 
 Style:
 - Warm but direct, like a smart friend. Not a finance lecturer.
 - Concise: 2-4 sentences usually. Long answers only when the user explicitly asks for detail.
-- Format money as ₹ with Indian comma style. Examples: ₹1,299 / ₹50,000 / ₹1,23,456. Whole rupees by default; show paise only if it materially matters.
-- Honest about expensive splurges if the user asks. No moralising about spending choices unless asked.
+- Honest about expensive spending if asked. No moralising unless the user asks for advice.
 - If the user asks about a category or time range with no data, say so explicitly instead of making something up.
 - No legal/financial disclaimers. No "I'm an AI" preambles. Just answer.
-- All dates in IST.
 
-Categories you'll see in the data: Food, Transport, Shopping, Entertainment, Other.`;
+Categories you'll see: Food, Transport, Shopping, Entertainment, Other.`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -115,10 +139,7 @@ Deno.serve(async (req) => {
     }
     const last = typedMessages[typedMessages.length - 1];
     if (last.role !== 'user') {
-      return json(
-        { error: 'Last message must be from the user' },
-        400,
-      );
+      return json({ error: 'Last message must be from the user' }, 400);
     }
     if (last.content.length > 2000) {
       return json({ error: 'Message too long (max 2000 chars)' }, 400);
@@ -130,13 +151,15 @@ Deno.serve(async (req) => {
       return json({ error: 'Server misconfigured: missing GROQ_API_KEY' }, 500);
     }
 
-    // Grounding: pull profile + last 60 days of transactions.
     const now = new Date();
     const since = new Date(now);
     since.setDate(now.getDate() - 60);
 
     const [profileRes, txRes] = await Promise.all([
-      supabase.from('profiles').select('name, monthly_budget').single(),
+      supabase
+        .from('profiles')
+        .select('name, monthly_budget, currency')
+        .maybeSingle(),
       supabase
         .from('transactions')
         .select('amount, merchant, category, transaction_type, transacted_at')
@@ -147,13 +170,13 @@ Deno.serve(async (req) => {
 
     const profile = (profileRes.data ?? null) as ProfileLite | null;
     const transactions = (txRes.data ?? []) as TransactionLite[];
+    const currencyCode = (profile?.currency as string | undefined) ?? 'USD';
 
-    const groundingText = buildGrounding(profile, transactions, now);
+    const groundingText = buildGrounding(profile, transactions, now, currencyCode);
 
     const groqMessages = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: buildSystemPrompt(currencyCode) },
       { role: 'system', content: groundingText },
-      // Keep the last 15 user/assistant turns to control context size.
       ...typedMessages.slice(-15),
     ];
 
@@ -201,11 +224,13 @@ function buildGrounding(
   profile: ProfileLite | null,
   transactions: TransactionLite[],
   now: Date,
+  currencyCode: string,
 ): string {
   if (!profile) {
-    return 'USER CONTEXT: profile not available. Answer politely that you can\'t see their data right now.';
+    return "USER CONTEXT: profile not available. Answer politely that you can't see their data right now.";
   }
 
+  const info = CURRENCY_INFO[currencyCode] ?? CURRENCY_INFO.USD;
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthTxs = transactions.filter(
     (t) =>
@@ -221,30 +246,30 @@ function buildGrounding(
   }
   const byCategoryLines = Object.entries(byCategory)
     .sort((a, b) => b[1] - a[1])
-    .map(([cat, amt]) => `  - ${cat}: ${formatRupees(amt)}`)
+    .map(([cat, amt]) => `  - ${cat}: ${formatMoney(amt, info)}`)
     .join('\n');
 
   const recentLines = transactions
     .slice(0, 25)
     .map((t) => {
-      const date = new Date(t.transacted_at).toLocaleDateString('en-IN', {
+      const date = new Date(t.transacted_at).toLocaleDateString(info.locale, {
         day: 'numeric',
         month: 'short',
-        timeZone: 'Asia/Kolkata',
       });
       const sign = t.transaction_type === 'debit' ? '-' : '+';
-      return `  - ${date}: ${sign}${formatRupees(t.amount)}  ${t.merchant}  [${t.category}]`;
+      return `  - ${date}: ${sign}${formatMoney(t.amount, info)}  ${t.merchant}  [${t.category}]`;
     })
     .join('\n');
 
   return `USER CONTEXT (real data — use these numbers, do not invent others):
 
 Name: ${profile.name}
-Monthly budget: ${formatRupees(budget)}
+Currency: ${info.name} (${currencyCode})
+Monthly budget: ${formatMoney(budget, info)}
 
 This calendar month (so far):
-  Spent (debits only): ${formatRupees(monthSpent)} (${pct}% of budget)
-  Remaining: ${formatRupees(Math.max(0, budget - monthSpent))}
+  Spent (debits only): ${formatMoney(monthSpent, info)} (${pct}% of budget)
+  Remaining: ${formatMoney(Math.max(0, budget - monthSpent), info)}
   Breakdown:
 ${byCategoryLines || '  (no debits yet this month)'}
 
@@ -252,15 +277,21 @@ Last 25 transactions (most recent first, last 60 days):
 ${recentLines || '  (none)'}`;
 }
 
-function formatRupees(paise: number): string {
-  const rupees = paise / 100;
-  return (
-    '₹' +
-    rupees.toLocaleString('en-IN', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-  );
+function formatMoney(minorUnits: number, info: CurrencyInfo): string {
+  const major = minorUnits / Math.pow(10, info.decimals);
+  return new Intl.NumberFormat(info.locale, {
+    style: 'currency',
+    currency: lookupCode(info),
+    minimumFractionDigits: 0,
+    maximumFractionDigits: info.decimals,
+  }).format(major);
+}
+
+function lookupCode(info: CurrencyInfo): string {
+  for (const [code, v] of Object.entries(CURRENCY_INFO)) {
+    if (v === info) return code;
+  }
+  return 'USD';
 }
 
 function json(body: unknown, status = 200): Response {
