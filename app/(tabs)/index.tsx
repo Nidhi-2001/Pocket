@@ -12,6 +12,7 @@ import { HeroSpendCard } from '../../components/home/HeroSpendCard';
 import { NudgeCard } from '../../components/home/NudgeCard';
 import { PersonalityCard } from '../../components/home/PersonalityCard';
 import { TransactionRow } from '../../components/home/TransactionRow';
+import { UploadStatementCard } from '../../components/home/UploadStatementCard';
 import { useNudges } from '../../hooks/useNudges';
 import { usePersonality } from '../../hooks/usePersonality';
 import { useProfile } from '../../hooks/useProfile';
@@ -200,8 +201,10 @@ export default function HomeTab() {
 
       <View className="px-6 pb-12">
         <Text className="text-xs text-text-muted uppercase mb-2 font-semibold tracking-wider">
-          Add a transaction
+          Add transactions
         </Text>
+        <View className="gap-3">
+          <UploadStatementCard onSuccess={refetchTxs} />
         <View className="bg-surface border border-border rounded-2xl p-4">
           <Text className="text-sm text-text-secondary mb-3">
             Paste a bank notification SMS and we&apos;ll parse it.
@@ -245,6 +248,7 @@ export default function HomeTab() {
           {parseHint && (
             <Text className="text-success text-xs mt-3">{parseHint}</Text>
           )}
+        </View>
         </View>
       </View>
     </ScrollView>
