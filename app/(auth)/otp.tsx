@@ -47,28 +47,24 @@ export default function Otp() {
 
     // Try the unified 'email' type first; fall back to 'signup' for brand-new
     // users on Supabase projects that route signup OTPs through that path.
-    let result = await supabase.auth.verifyOtp({
-      email,
-      token: code,
-      type: 'email',
-    });
-    if (result.error) {
-      console.log('verifyOtp type=email failed, retrying with type=signup');
-      result = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: 'signup',
-      });
+    // Try the common OTP token types in order. signInWithOtp normally uses
+    // 'email' / 'signup'; admin-generated magic links use 'magiclink'. We
+    // try all three so any flavor of OTP works.
+    const types = ['email', 'magiclink', 'signup'] as const;
+    let result: Awaited<ReturnType<typeof supabase.auth.verifyOtp>> | null =
+      null;
+    for (const t of types) {
+      result = await supabase.auth.verifyOtp({ email, token: code, type: t });
+      if (!result.error) break;
     }
 
     setLoading(false);
-    if (result.error) {
-      console.error('verifyOtp final error:', result.error);
-      const e = result.error;
-      const detail = [e.message, e.status ? `status ${e.status}` : null, e.code]
+    if (!result || result.error) {
+      const e = result?.error;
+      const detail = [e?.message, e?.status ? `status ${e.status}` : null, e?.code]
         .filter(Boolean)
         .join(' • ');
-      setError(detail);
+      setError(detail || 'Verification failed');
       return;
     }
     console.log('verifyOtp success, session:', !!result.data.session);
@@ -112,6 +108,20 @@ export default function Otp() {
           ) : (
             <Text className="text-white font-semibold text-lg">Send code</Text>
           )}
+        </Pressable>
+
+        <Pressable
+          onPress={() => {
+            if (!email.includes('@')) {
+              setError('Enter your email first.');
+              return;
+            }
+            setError(null);
+            setStep('code');
+          }}
+          className="mt-4 self-center"
+        >
+          <Text className="text-primary text-sm">I already have a code →</Text>
         </Pressable>
       </View>
     );
