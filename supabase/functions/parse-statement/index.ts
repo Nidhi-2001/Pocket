@@ -220,7 +220,39 @@ Deno.serve(async (req) => {
       return json({ error: 'PDF appears empty or unreadable' }, 422);
     }
 
-    // Send to Groq.
+    // Send to Groq. Groq's free tier llama-3.3-70b has a 12,000 TPM limit.
+    // We size every part of the request to keep the total below ~11,500
+    // tokens. Token estimate: ~3.5 chars/token average.
+    const TPM_BUDGET = 11_500;
+    const SYSTEM_PROMPT_TOKENS = 1_200; // rough cap for our prompt
+    const SAFETY_BUFFER = 300;
+
+    // Hard-cap input text so a giant PDF can't blow the budget by itself.
+    const inputCharCap = 28_000; // ~8000 tokens
+    const inputText = pdfText.slice(0, inputCharCap);
+    const inputTokenEstimate = Math.ceil(inputText.length / 3.5);
+
+    const availableForOutput =
+      TPM_BUDGET - SYSTEM_PROMPT_TOKENS - inputTokenEstimate - SAFETY_BUFFER;
+    const maxOutputTokens = Math.max(800, Math.min(4_000, availableForOutput));
+
+    if (maxOutputTokens < 800) {
+      await failUpload(
+        admin,
+        uploadId,
+        `PDF text too large (${pdfText.length} chars) for the free-tier token budget.`,
+      );
+      return json(
+        {
+          error: 'PDF too large for one request',
+          detail:
+            'Your statement extracts to more text than Groq\'s free tier allows in one shot. We\'ll add chunking for big PDFs in a follow-up.',
+          pdfTextLength: pdfText.length,
+        },
+        413,
+      );
+    }
+
     const groqRes = await fetch(
       'https://api.groq.com/openai/v1/chat/completions',
       {
@@ -233,11 +265,11 @@ Deno.serve(async (req) => {
           model: 'llama-3.3-70b-versatile',
           messages: [
             { role: 'system', content: buildSystemPrompt(currencyCode) },
-            { role: 'user', content: pdfText.slice(0, 80_000) }, // safety cap
+            { role: 'user', content: inputText },
           ],
           response_format: { type: 'json_object' },
           temperature: 0,
-          max_tokens: 8000,
+          max_tokens: maxOutputTokens,
         }),
       },
     );
@@ -245,7 +277,15 @@ Deno.serve(async (req) => {
     if (!groqRes.ok) {
       const errText = await groqRes.text();
       await failUpload(admin, uploadId, `Groq ${groqRes.status}: ${errText.slice(0, 200)}`);
-      return json({ error: 'AI provider error', status: groqRes.status }, 502);
+      return json(
+        {
+          error: 'AI provider error',
+          status: groqRes.status,
+          detail: errText.slice(0, 500),
+          pdfTextLength: pdfText.length,
+        },
+        502,
+      );
     }
 
     const groqData = await groqRes.json();

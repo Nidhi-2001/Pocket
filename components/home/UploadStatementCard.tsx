@@ -128,7 +128,15 @@ export function UploadStatementCard({ onSuccess }: UploadStatementCardProps) {
       const ctx = (fnErr as { context?: unknown }).context;
       if (ctx instanceof Response) {
         const body = await ctx.json().catch(() => null);
-        setError(body?.error ?? `HTTP ${ctx.status}`);
+        const parts = [
+          body?.error ?? `HTTP ${ctx.status}`,
+          body?.status ? `groq status ${body.status}` : null,
+          body?.detail ? `detail: ${String(body.detail).slice(0, 200)}` : null,
+          body?.pdfTextLength
+            ? `pdf text len: ${body.pdfTextLength}`
+            : null,
+        ].filter(Boolean);
+        setError(parts.join(' • '));
       } else {
         setError(fnErr.message ?? String(fnErr));
       }
