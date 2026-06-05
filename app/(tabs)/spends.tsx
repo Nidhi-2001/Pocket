@@ -178,6 +178,12 @@ export default function SpendsTab() {
     if (range === 'last30') return 'Last 30 days at a glance.';
     if (range === 'last90') return 'Last 90 days at a glance.';
     if (range === 'allTime') return 'Everything we know about your spending.';
+    // Custom: only format once both inputs are valid YYYY-MM-DD. While the
+    // user is mid-typing, fall back to a generic label so we don't crash on
+    // parseISO of an incomplete date string.
+    const s = parseYmd(customStart);
+    const e = parseYmd(customEnd);
+    if (!s || !e) return 'Custom range';
     return `${formatDateOnly(customStart)} → ${formatDateOnly(customEnd)}`;
   }, [range, customStart, customEnd]);
 
