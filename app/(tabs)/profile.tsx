@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { CurrencyPicker } from '../../components/ui/CurrencyPicker';
+import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
 import {
   type CurrencyCode,
   getCurrency,
@@ -125,7 +125,7 @@ export default function ProfileTab() {
             />
 
             <Text className="text-xs text-text-secondary mb-1">Currency</Text>
-            <CurrencyPicker value={editCurrency} onChange={setEditCurrency} />
+            <CurrencyDropdown value={editCurrency} onChange={setEditCurrency} />
 
             <Text className="text-xs text-text-secondary mb-1 mt-4">
               Monthly budget ({editCur.symbol})

@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { GoalCard } from '../../components/goals/GoalCard';
-import { CurrencyPicker } from '../../components/ui/CurrencyPicker';
+import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useGoals } from '../../hooks/useGoals';
 import { type CurrencyCode, getCurrency, majorToMinor } from '../../lib/currency';
@@ -123,7 +123,11 @@ export default function GoalsTab() {
             </View>
 
             <Text className="text-xs text-text-secondary mb-1">Currency</Text>
-            <CurrencyPicker value={newCurrency} onChange={setNewCurrency} />
+            <CurrencyDropdown
+              value={newCurrency}
+              onChange={setNewCurrency}
+              label="Currency for this goal"
+            />
 
             <Text className="text-xs text-text-secondary mb-1 mt-4">
               Target amount ({newCur.symbol})

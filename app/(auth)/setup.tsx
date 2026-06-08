@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { CurrencyPicker } from '../../components/ui/CurrencyPicker';
+import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
 import { CURRENCIES, type CurrencyCode, getCurrency, majorToMinor } from '../../lib/currency';
 import { supabase } from '../../lib/supabase';
 
@@ -110,7 +110,7 @@ export default function Setup() {
         <Text className="text-sm font-medium text-text-secondary mb-2">
           Currency
         </Text>
-        <CurrencyPicker value={currency} onChange={handleCurrencyChange} />
+        <CurrencyDropdown value={currency} onChange={handleCurrencyChange} />
         <Text className="text-xs text-text-muted mt-2 mb-6">
           You can change this later in Profile. Pick the one your bank uses.
         </Text>
