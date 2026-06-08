@@ -5,7 +5,6 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { HeroSpendCard } from '../../components/home/HeroSpendCard';
@@ -24,11 +23,6 @@ export default function HomeTab() {
   const { transactions, refetch: refetchTxs } = useTransactions({ limit: 10 });
   const { nudges, markRead, refetch: refetchNudges } = useNudges();
   const { personality, refetch: refetchPersonality } = usePersonality();
-
-  const [smsText, setSmsText] = useState('');
-  const [parsing, setParsing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [parseHint, setParseHint] = useState<string | null>(null);
 
   const [generating, setGenerating] = useState<null | 'nudge' | 'personality'>(
     null,
@@ -50,38 +44,6 @@ export default function HomeTab() {
 
   const recentFive = transactions.slice(0, 5);
   const topNudge = nudges[0];
-
-  async function parseSms() {
-    if (!smsText.trim()) return;
-    setParsing(true);
-    setError(null);
-    setParseHint(null);
-    const { data, error: err } = await supabase.functions.invoke('parse-sms', {
-      body: { smsText: smsText.trim() },
-    });
-    setParsing(false);
-    if (err) {
-      const ctx = (err as { context?: unknown }).context;
-      if (ctx instanceof Response) {
-        const body = await ctx.json().catch(() => null);
-        setError(body?.error ?? `HTTP ${ctx.status}`);
-      } else {
-        setError(err.message || String(err));
-      }
-      return;
-    }
-    if (data && typeof data === 'object') {
-      if ('valid' in data && data.valid === false) {
-        setParseHint('Not a transaction SMS — nothing was added.');
-      } else if ('duplicate' in data && data.duplicate) {
-        setParseHint('Already imported — this looks like the same transaction.');
-      } else {
-        setParseHint('Added to your transactions ✓');
-        setSmsText('');
-        refetchTxs();
-      }
-    }
-  }
 
   async function generate(kind: 'nudge' | 'personality') {
     setGenerating(kind);
@@ -201,55 +163,9 @@ export default function HomeTab() {
 
       <View className="px-6 pb-12">
         <Text className="text-xs text-text-muted uppercase mb-2 font-semibold tracking-wider">
-          Add transactions
+          Import transactions
         </Text>
-        <View className="gap-3">
-          <UploadStatementCard onSuccess={refetchTxs} />
-        <View className="bg-surface border border-border rounded-2xl p-4">
-          <Text className="text-sm text-text-secondary mb-3">
-            Paste a bank notification SMS and we&apos;ll parse it.
-          </Text>
-          <TextInput
-            value={smsText}
-            onChangeText={(t) => {
-              setSmsText(t);
-              setError(null);
-              setParseHint(null);
-            }}
-            placeholder="e.g. Your card was charged $42.99 at Starbucks on 2026-06-03…"
-            placeholderTextColor="#9CA3AF"
-            multiline
-            numberOfLines={4}
-            style={{ textAlignVertical: 'top', minHeight: 80 }}
-            className="bg-background border border-border rounded-xl px-3 py-3 text-sm text-text-primary mb-3"
-          />
-          <Pressable
-            onPress={parseSms}
-            disabled={parsing || !smsText.trim()}
-            className={`flex-row items-center justify-center gap-2 py-3 rounded-xl ${
-              parsing || !smsText.trim()
-                ? 'bg-text-muted'
-                : 'bg-primary active:opacity-80'
-            }`}
-          >
-            {parsing ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <>
-                <Ionicons name="sparkles" size={16} color="white" />
-                <Text className="text-white font-semibold text-sm">
-                  Parse with AI
-                </Text>
-              </>
-            )}
-          </Pressable>
-
-          {error && <Text className="text-danger text-xs mt-3">{error}</Text>}
-          {parseHint && (
-            <Text className="text-success text-xs mt-3">{parseHint}</Text>
-          )}
-        </View>
-        </View>
+        <UploadStatementCard onSuccess={refetchTxs} />
       </View>
     </ScrollView>
   );
