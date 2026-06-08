@@ -9,14 +9,21 @@ import {
   View,
 } from 'react-native';
 import { GoalCard } from '../../components/goals/GoalCard';
+import { CurrencyPicker } from '../../components/ui/CurrencyPicker';
+import { useCurrency } from '../../hooks/useCurrency';
 import { useGoals } from '../../hooks/useGoals';
+import { type CurrencyCode, getCurrency, majorToMinor } from '../../lib/currency';
 import { supabase } from '../../lib/supabase';
 
 export default function GoalsTab() {
+  const userCurrency = useCurrency();
   const { goals, loading, refetch } = useGoals();
   const [showNew, setShowNew] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newEmoji, setNewEmoji] = useState('🎯');
+  const [newCurrency, setNewCurrency] = useState<CurrencyCode>(
+    (userCurrency as CurrencyCode) ?? 'USD',
+  );
   const [newAmount, setNewAmount] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +32,7 @@ export default function GoalsTab() {
     setShowNew(false);
     setNewTitle('');
     setNewEmoji('🎯');
+    setNewCurrency((userCurrency as CurrencyCode) ?? 'USD');
     setNewAmount('');
     setError(null);
   }
@@ -49,7 +57,8 @@ export default function GoalsTab() {
       user_id: user.id,
       title: newTitle.trim(),
       emoji: newEmoji.trim() || '🎯',
-      target_amount: target * 100,
+      target_amount: majorToMinor(target, newCurrency),
+      currency: newCurrency,
     });
     setCreating(false);
     if (err) {
@@ -59,6 +68,8 @@ export default function GoalsTab() {
     reset();
     refetch();
   }
+
+  const newCur = getCurrency(newCurrency);
 
   return (
     <ScrollView className="flex-1 bg-background">
@@ -86,7 +97,7 @@ export default function GoalsTab() {
               New goal
             </Text>
 
-            <View className="flex-row gap-3 mb-3">
+            <View className="flex-row gap-3 mb-4">
               <View>
                 <Text className="text-xs text-text-secondary mb-1">Emoji</Text>
                 <TextInput
@@ -111,18 +122,26 @@ export default function GoalsTab() {
               </View>
             </View>
 
-            <Text className="text-xs text-text-secondary mb-1">
-              Target amount (₹)
+            <Text className="text-xs text-text-secondary mb-1">Currency</Text>
+            <CurrencyPicker value={newCurrency} onChange={setNewCurrency} />
+
+            <Text className="text-xs text-text-secondary mb-1 mt-4">
+              Target amount ({newCur.symbol})
             </Text>
-            <TextInput
-              value={newAmount}
-              onChangeText={(t) => setNewAmount(t.replace(/\D/g, ''))}
-              placeholder="50000"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              inputMode="numeric"
-              className="bg-background border border-border rounded-xl px-3 py-2 text-base text-text-primary mb-4"
-            />
+            <View className="flex-row items-center bg-background border border-border rounded-xl px-3 mb-4">
+              <Text className="text-base text-text-muted mr-2">
+                {newCur.symbol}
+              </Text>
+              <TextInput
+                value={newAmount}
+                onChangeText={(t) => setNewAmount(t.replace(/\D/g, ''))}
+                placeholder="50000"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="number-pad"
+                inputMode="numeric"
+                className="flex-1 py-2 text-base text-text-primary"
+              />
+            </View>
 
             {error && (
               <Text className="text-danger text-sm mb-3">{error}</Text>

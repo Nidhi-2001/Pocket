@@ -9,7 +9,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useCurrency } from '../../hooks/useCurrency';
 import { getCurrency, majorToMinor } from '../../lib/currency';
 import { formatCurrency, formatDateOnly } from '../../lib/formatters';
 import { supabase } from '../../lib/supabase';
@@ -21,7 +20,9 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, onChange }: GoalCardProps) {
-  const currency = useCurrency();
+  // Format every amount in the GOAL's currency (not the user's profile
+  // currency) — a Tokyo trip stays in ¥ even if the user spends in USD.
+  const currency = goal.currency;
   const cur = getCurrency(currency);
   const [addText, setAddText] = useState('');
   const [busy, setBusy] = useState(false);

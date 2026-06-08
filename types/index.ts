@@ -35,8 +35,9 @@ export interface Goal {
   user_id: string;
   title: string;
   emoji: string;
-  target_amount: number; // in minor units
-  current_amount: number;
+  target_amount: number; // in minor units of `currency`
+  current_amount: number; // in minor units of `currency`
+  currency: CurrencyCode | string;
   deadline?: string;
   status: 'active' | 'completed' | 'paused';
   created_at: string;
