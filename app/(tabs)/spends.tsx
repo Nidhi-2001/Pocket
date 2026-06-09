@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { CashFlowChart, type FlowSegment } from '../../components/spends/CashFlowChart';
 import { DonutChart, type DonutSegment } from '../../components/spends/DonutChart';
 import { categories, type CategoryKey } from '../../constants/theme';
 import { useCategoryBudgets } from '../../hooks/useCategoryBudgets';
@@ -122,6 +123,31 @@ export default function SpendsTab() {
   const totalExpenses = debits.reduce((s, t) => s + t.amount, 0);
   const net = totalIncome - totalExpenses;
 
+  // Segments for the combined cash-flow chart at the top.
+  const debitsForChart = useMemo<FlowSegment[]>(() => {
+    const acc: Partial<Record<CategoryKey, number>> = {};
+    for (const tx of debits) {
+      acc[tx.category as CategoryKey] = (acc[tx.category as CategoryKey] ?? 0) + tx.amount;
+    }
+    return (Object.entries(acc) as [CategoryKey, number][])
+      .map(([cat, val]) => ({ label: cat, value: val, color: categories[cat].color }))
+      .sort((a, b) => b.value - a.value);
+  }, [debits]);
+
+  const creditsForChart = useMemo<FlowSegment[]>(() => {
+    const acc: Record<string, number> = {};
+    for (const tx of credits) {
+      acc[tx.merchant] = (acc[tx.merchant] ?? 0) + tx.amount;
+    }
+    return Object.entries(acc)
+      .map(([source, val], i) => ({
+        label: source,
+        value: val,
+        color: INCOME_COLORS[i % INCOME_COLORS.length],
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [credits]);
+
   const periodSubtitle = useMemo(() => {
     if (range === 'thisMonth') return 'This month at a glance.';
     if (range === 'last30') return 'Last 30 days at a glance.';
@@ -211,24 +237,13 @@ export default function SpendsTab() {
         </View>
       )}
 
-      {/* Cash flow summary at the top */}
+      {/* Single chart that visualizes both income and expenses */}
       <View className="px-6 mt-4 mb-6">
-        <View className="bg-primary rounded-3xl p-5">
-          <Text style={{ color: '#EEF2FF' }} className="text-[10px] uppercase tracking-widest font-semibold mb-3">
-            Cash flow
-          </Text>
-          <View className="flex-row">
-            <SummaryStat label="Income" value={formatCurrency(totalIncome, currency)} valueColor="white" />
-            <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginHorizontal: 8 }} />
-            <SummaryStat label="Expenses" value={formatCurrency(totalExpenses, currency)} valueColor="white" />
-            <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginHorizontal: 8 }} />
-            <SummaryStat
-              label="Net"
-              value={`${net >= 0 ? '+' : ''}${formatCurrency(net, currency)}`}
-              valueColor={net >= 0 ? '#A7F3D0' : '#FCA5A5'}
-            />
-          </View>
-        </View>
+        <CashFlowChart
+          income={creditsForChart}
+          expenses={debitsForChart}
+          currency={currency}
+        />
       </View>
 
       {loading ? (
@@ -258,22 +273,6 @@ export default function SpendsTab() {
         </>
       )}
     </ScrollView>
-  );
-}
-
-interface SummaryStatProps {
-  label: string;
-  value: string;
-  valueColor: string;
-}
-function SummaryStat({ label, value, valueColor }: SummaryStatProps) {
-  return (
-    <View className="flex-1">
-      <Text style={{ color: '#C7D2FE' }} className="text-[11px] mb-1">{label}</Text>
-      <Text className="text-base font-bold" style={{ color: valueColor }} numberOfLines={1}>
-        {value}
-      </Text>
-    </View>
   );
 }
 
@@ -369,15 +368,6 @@ function ExpenseSection({
 
   return (
     <>
-      <View className="py-3 items-center">
-        <DonutChart
-          segments={summary}
-          centerSubLabel="Spent"
-          centerLabel={formatCurrency(totalExpenses, currency)}
-          bottomLabel={`${debits.length} ${debits.length === 1 ? 'transaction' : 'transactions'}`}
-        />
-      </View>
-
       {stats && (
         <View className="px-6 mb-5 flex-row gap-2">
           <StatCard
@@ -554,19 +544,6 @@ function IncomeSection({ credits, totalIncome, currency }: IncomeSectionProps) {
 
   return (
     <>
-      <View className="py-3 items-center">
-        <DonutChart
-          segments={sources.map((s) => ({
-            value: s.total,
-            color: s.color,
-            label: s.source,
-          }))}
-          centerSubLabel="Earned"
-          centerLabel={formatCurrency(totalIncome, currency)}
-          bottomLabel={`${credits.length} ${credits.length === 1 ? 'deposit' : 'deposits'}`}
-        />
-      </View>
-
       <View className="px-6 pb-12">
         <Text className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-2">
           By source
