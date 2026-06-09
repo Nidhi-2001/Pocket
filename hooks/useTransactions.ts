@@ -10,6 +10,8 @@ interface UseTransactionsOptions {
   monthOnly?: boolean;
   /** Only return debits (excludes credits like salary). */
   debitsOnly?: boolean;
+  /** Only return credits (income). Mutually exclusive with debitsOnly. */
+  creditsOnly?: boolean;
   /** Explicit lower bound on transacted_at. Overrides monthOnly. */
   since?: Date | null;
   /** Explicit upper bound on transacted_at. */
@@ -30,7 +32,7 @@ export function useTransactions(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { limit, monthOnly, debitsOnly, since, until } = opts;
+  const { limit, monthOnly, debitsOnly, creditsOnly, since, until } = opts;
   // useFocusEffect needs stable deps — serialize Dates to ms timestamps.
   const sinceMs = since ? since.getTime() : null;
   const untilMs = until ? until.getTime() : null;
@@ -54,6 +56,8 @@ export function useTransactions(
     }
     if (debitsOnly) {
       q = q.eq('transaction_type', 'debit');
+    } else if (creditsOnly) {
+      q = q.eq('transaction_type', 'credit');
     }
     if (limit) {
       q = q.limit(limit);
@@ -68,7 +72,7 @@ export function useTransactions(
     }
     setTransactions((data as Transaction[]) ?? []);
     setLoading(false);
-  }, [limit, monthOnly, debitsOnly, sinceMs, untilMs]);
+  }, [limit, monthOnly, debitsOnly, creditsOnly, sinceMs, untilMs]);
 
   // Re-fetch whenever the host screen gains focus. Fires on initial mount
   // and again every time the user navigates back from a detail screen, so

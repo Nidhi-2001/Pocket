@@ -5,8 +5,18 @@ export interface Profile {
   name: string;
   phone: string;
   monthly_budget: number; // in minor units of `currency`
+  expected_monthly_income: number; // in minor units of `currency`
   currency: CurrencyCode | string;
   created_at: string;
+}
+
+export interface CategoryBudget {
+  id: string;
+  user_id: string;
+  category: 'Food' | 'Transport' | 'Shopping' | 'Entertainment' | 'Other';
+  budget_amount: number; // in minor units
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Transaction {

@@ -10,9 +10,12 @@ import {
 } from 'react-native';
 import { DonutChart, type DonutSegment } from '../../components/spends/DonutChart';
 import { categories, type CategoryKey } from '../../constants/theme';
+import { useCategoryBudgets } from '../../hooks/useCategoryBudgets';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useTransactions } from '../../hooks/useTransactions';
 import { formatCurrency, formatDateOnly } from '../../lib/formatters';
+
+type ViewMode = 'expenses' | 'income';
 
 type TimeRange = 'thisMonth' | 'last30' | 'last90' | 'allTime' | 'custom';
 
@@ -52,7 +55,9 @@ function parseYmd(s: string): Date | null {
 
 export default function SpendsTab() {
   const currency = useCurrency();
+  const [mode, setMode] = useState<ViewMode>('expenses');
   const [range, setRange] = useState<TimeRange>('thisMonth');
+  const { byCategory: budgetByCategory } = useCategoryBudgets();
   const [customStart, setCustomStart] = useState<string>(daysAgoYmd(30));
   const [customEnd, setCustomEnd] = useState<string>(todayYmd());
 
@@ -102,9 +107,10 @@ export default function SpendsTab() {
   }, [range, customStart, customEnd]);
 
   const { transactions, loading } = useTransactions({
-    since: range === 'custom' && dateError ? new Date() : since, // skip query while invalid
+    since: range === 'custom' && dateError ? new Date() : since,
     until,
-    debitsOnly: true,
+    debitsOnly: mode === 'expenses',
+    creditsOnly: mode === 'income',
   });
 
   const txsForCalc = dateError ? [] : transactions;
@@ -190,8 +196,46 @@ export default function SpendsTab() {
   return (
     <ScrollView className="flex-1 bg-background">
       <View className="px-6 pt-16 pb-3">
-        <Text className="text-3xl font-bold text-text-primary mb-1">Spends</Text>
+        <Text className="text-3xl font-bold text-text-primary mb-1">
+          {mode === 'expenses' ? 'Spends' : 'Income'}
+        </Text>
         <Text className="text-base text-text-secondary">{periodSubtitle}</Text>
+      </View>
+
+      {/* Expense / Income toggle */}
+      <View className="px-6 mb-3 flex-row gap-2">
+        <Pressable
+          onPress={() => setMode('expenses')}
+          className={`flex-1 py-2 rounded-xl items-center border ${
+            mode === 'expenses'
+              ? 'bg-primary border-primary'
+              : 'bg-surface border-border active:opacity-80'
+          }`}
+        >
+          <Text
+            className={`text-sm font-semibold ${
+              mode === 'expenses' ? 'text-white' : 'text-text-secondary'
+            }`}
+          >
+            Expenses
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setMode('income')}
+          className={`flex-1 py-2 rounded-xl items-center border ${
+            mode === 'income'
+              ? 'bg-primary border-primary'
+              : 'bg-surface border-border active:opacity-80'
+          }`}
+        >
+          <Text
+            className={`text-sm font-semibold ${
+              mode === 'income' ? 'text-white' : 'text-text-secondary'
+            }`}
+          >
+            Income
+          </Text>
+        </Pressable>
       </View>
 
       {/* Time range pills */}
@@ -304,7 +348,7 @@ export default function SpendsTab() {
         ) : (
           <DonutChart
             segments={summary}
-            centerSubLabel="Total spent"
+            centerSubLabel={mode === 'expenses' ? 'Total spent' : 'Total income'}
             centerLabel={formatCurrency(totalSpent, currency)}
             bottomLabel={
               txCount > 0
@@ -342,11 +386,11 @@ export default function SpendsTab() {
         </View>
       )}
 
-      {/* Top merchants */}
+      {/* Top merchants / income sources */}
       {topMerchants.length > 0 && (
         <View className="px-6 mb-6">
           <Text className="text-lg font-semibold text-text-primary mb-3">
-            Top merchants
+            {mode === 'expenses' ? 'Top merchants' : 'Top income sources'}
           </Text>
           <View className="bg-surface border border-border rounded-2xl overflow-hidden">
             {topMerchants.map((m, idx) => {
@@ -408,6 +452,10 @@ export default function SpendsTab() {
             {summary.map((seg) => {
               const pct = totalSpent > 0 ? (seg.value / totalSpent) * 100 : 0;
               const meta = categories[seg.category];
+              const budget = budgetByCategory[seg.category] ?? 0;
+              const budgetPct =
+                budget > 0 ? Math.min(100, (seg.value / budget) * 100) : 0;
+              const overBudget = budget > 0 && seg.value > budget;
               return (
                 <View
                   key={seg.category}
@@ -427,7 +475,7 @@ export default function SpendsTab() {
                       <Text className="text-xs text-text-muted">
                         {seg.count}{' '}
                         {seg.count === 1 ? 'transaction' : 'transactions'} ·{' '}
-                        {pct.toFixed(0)}%
+                        {pct.toFixed(0)}% of total
                       </Text>
                     </View>
                     <Text className="text-lg font-bold text-text-primary">
@@ -443,6 +491,33 @@ export default function SpendsTab() {
                       }}
                     />
                   </View>
+                  {budget > 0 && mode === 'expenses' && (
+                    <View className="mt-3">
+                      <View className="flex-row justify-between mb-1">
+                        <Text className="text-xs text-text-secondary">
+                          Budget: {formatCurrency(budget, currency)}
+                        </Text>
+                        <Text
+                          className={`text-xs font-medium ${
+                            overBudget ? 'text-danger' : 'text-text-secondary'
+                          }`}
+                        >
+                          {overBudget
+                            ? `Over by ${formatCurrency(seg.value - budget, currency)}`
+                            : `${formatCurrency(budget - seg.value, currency)} left`}
+                        </Text>
+                      </View>
+                      <View className="h-1.5 bg-background border border-border rounded-full overflow-hidden">
+                        <View
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${budgetPct}%`,
+                            backgroundColor: overBudget ? '#F43F5E' : seg.color,
+                          }}
+                        />
+                      </View>
+                    </View>
+                  )}
                 </View>
               );
             })}

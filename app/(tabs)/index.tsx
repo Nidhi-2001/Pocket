@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { HeroSpendCard } from '../../components/home/HeroSpendCard';
+import { CashFlowCard } from '../../components/home/CashFlowCard';
 import { NudgeCard } from '../../components/home/NudgeCard';
 import { PersonalityCard } from '../../components/home/PersonalityCard';
 import { TransactionRow } from '../../components/home/TransactionRow';
@@ -34,12 +34,14 @@ export default function HomeTab() {
     new Date().getMonth(),
     1,
   );
-  const monthlySpent = transactions
-    .filter(
-      (tx) =>
-        tx.transaction_type === 'debit' &&
-        new Date(tx.transacted_at) >= monthStart,
-    )
+  const monthTxs = transactions.filter(
+    (tx) => new Date(tx.transacted_at) >= monthStart,
+  );
+  const monthlySpent = monthTxs
+    .filter((tx) => tx.transaction_type === 'debit')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const monthlyIncome = monthTxs
+    .filter((tx) => tx.transaction_type === 'credit')
     .reduce((sum, tx) => sum + tx.amount, 0);
 
   const recentFive = transactions.slice(0, 5);
@@ -83,9 +85,10 @@ export default function HomeTab() {
       )}
 
       <View className="px-6 mb-6">
-        <HeroSpendCard
-          spent={monthlySpent}
-          budget={profile?.monthly_budget ?? 0}
+        <CashFlowCard
+          income={monthlyIncome}
+          expenses={monthlySpent}
+          expectedIncome={profile?.expected_monthly_income ?? 0}
         />
       </View>
 

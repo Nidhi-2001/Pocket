@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { CategoryBudgetsCard } from '../../components/profile/CategoryBudgetsCard';
 import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
 import {
   type CurrencyCode,
@@ -21,6 +22,7 @@ import { supabase } from '../../lib/supabase';
 interface ProfileRow {
   name: string;
   monthly_budget: number;
+  expected_monthly_income: number;
   currency: string;
 }
 
@@ -31,13 +33,14 @@ export default function ProfileTab() {
   const [editName, setEditName] = useState('');
   const [editCurrency, setEditCurrency] = useState<CurrencyCode>('USD');
   const [editBudget, setEditBudget] = useState('');
+  const [editIncome, setEditIncome] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
     const { data } = await supabase
       .from('profiles')
-      .select('name, monthly_budget, currency')
+      .select('name, monthly_budget, expected_monthly_income, currency')
       .maybeSingle();
     if (data) setProfile(data as ProfileRow);
     const { data: u } = await supabase.auth.getUser();
@@ -54,6 +57,15 @@ export default function ProfileTab() {
     setEditCurrency((profile.currency as CurrencyCode) ?? 'USD');
     setEditBudget(
       String(Math.round(minorToMajor(profile.monthly_budget, profile.currency))),
+    );
+    setEditIncome(
+      profile.expected_monthly_income > 0
+        ? String(
+            Math.round(
+              minorToMajor(profile.expected_monthly_income, profile.currency),
+            ),
+          )
+        : '',
     );
     setError(null);
     setEditing(true);
@@ -75,12 +87,16 @@ export default function ProfileTab() {
       setError('Not signed in.');
       return;
     }
+    const incomeMajor = editIncome ? parseInt(editIncome, 10) : 0;
     const { error: err } = await supabase
       .from('profiles')
       .update({
         name: editName.trim(),
         currency: editCurrency,
         monthly_budget: majorToMinor(budgetMajor, editCurrency),
+        expected_monthly_income: incomeMajor
+          ? majorToMinor(incomeMajor, editCurrency)
+          : 0,
       })
       .eq('id', user.id);
     setSaving(false);
@@ -137,6 +153,24 @@ export default function ProfileTab() {
               <TextInput
                 value={editBudget}
                 onChangeText={(t) => setEditBudget(t.replace(/\D/g, ''))}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                className="flex-1 py-2 text-base text-text-primary"
+              />
+            </View>
+
+            <Text className="text-xs text-text-secondary mb-1">
+              Expected monthly income ({editCur.symbol}) — optional
+            </Text>
+            <View className="flex-row items-center bg-background border border-border rounded-xl px-3 mb-4">
+              <Text className="text-base text-text-muted mr-2">
+                {editCur.symbol}
+              </Text>
+              <TextInput
+                value={editIncome}
+                onChangeText={(t) => setEditIncome(t.replace(/\D/g, ''))}
+                placeholder="0"
+                placeholderTextColor="#9CA3AF"
                 keyboardType="number-pad"
                 inputMode="numeric"
                 className="flex-1 py-2 text-base text-text-primary"
@@ -209,9 +243,29 @@ export default function ProfileTab() {
                   : '—'}
               </Text>
             </View>
+
+            <View className="bg-surface border border-border rounded-2xl p-5">
+              <Text className="text-xs text-text-muted uppercase mb-1">
+                Expected monthly income
+              </Text>
+              <Text className="text-lg text-text-primary font-medium">
+                {profile && profile.expected_monthly_income > 0
+                  ? formatCurrency(
+                      profile.expected_monthly_income,
+                      profile.currency,
+                    )
+                  : 'Not set'}
+              </Text>
+            </View>
           </View>
         )}
       </View>
+
+      {!editing && (
+        <View className="px-6 mb-3">
+          <CategoryBudgetsCard />
+        </View>
+      )}
 
       <View className="px-6 pt-2 pb-12">
         <Pressable
