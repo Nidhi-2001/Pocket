@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AddIncomeCard } from '../../components/home/AddIncomeCard';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
 import { NudgeCard } from '../../components/home/NudgeCard';
 import { PersonalityCard } from '../../components/home/PersonalityCard';
@@ -166,9 +167,12 @@ export default function HomeTab() {
 
       <View className="px-6 pb-12">
         <Text className="text-xs text-text-muted uppercase mb-2 font-semibold tracking-wider">
-          Import transactions
+          Add transactions
         </Text>
-        <UploadStatementCard onSuccess={refetchTxs} />
+        <View className="gap-3">
+          <AddIncomeCard onSuccess={refetchTxs} />
+          <UploadStatementCard onSuccess={refetchTxs} />
+        </View>
       </View>
     </ScrollView>
   );
