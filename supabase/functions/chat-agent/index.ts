@@ -30,6 +30,7 @@ interface ProfileLite {
   name: string;
   monthly_budget: number; // minor units of `currency`
   currency: string;
+  expected_monthly_income: number;
 }
 
 interface TransactionLite {
@@ -152,20 +153,20 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date();
-    const since = new Date(now);
-    since.setDate(now.getDate() - 60);
 
+    // Pull the user's full recent history — up to 200 most recent
+    // transactions across all time — so chat can answer questions about
+    // any month, not just the trailing two-month window.
     const [profileRes, txRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('name, monthly_budget, currency')
+        .select('name, monthly_budget, currency, expected_monthly_income')
         .maybeSingle(),
       supabase
         .from('transactions')
         .select('amount, merchant, category, transaction_type, transacted_at')
-        .gte('transacted_at', since.toISOString())
         .order('transacted_at', { ascending: false })
-        .limit(60),
+        .limit(200),
     ]);
 
     const profile = (profileRes.data ?? null) as ProfileLite | null;
@@ -232,16 +233,23 @@ function buildGrounding(
 
   const info = CURRENCY_INFO[currencyCode] ?? CURRENCY_INFO.USD;
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthTxs = transactions.filter(
+
+  // ── This-month summary ─────────────────────────────────────────────
+  const thisMonthDebits = transactions.filter(
     (t) =>
       new Date(t.transacted_at) >= monthStart && t.transaction_type === 'debit',
   );
-  const monthSpent = monthTxs.reduce((s, t) => s + t.amount, 0);
+  const thisMonthCredits = transactions.filter(
+    (t) =>
+      new Date(t.transacted_at) >= monthStart && t.transaction_type === 'credit',
+  );
+  const monthSpent = thisMonthDebits.reduce((s, t) => s + t.amount, 0);
+  const monthEarned = thisMonthCredits.reduce((s, t) => s + t.amount, 0);
   const budget = profile.monthly_budget;
   const pct = budget > 0 ? Math.round((monthSpent / budget) * 100) : 0;
 
   const byCategory: Record<string, number> = {};
-  for (const t of monthTxs) {
+  for (const t of thisMonthDebits) {
     byCategory[t.category] = (byCategory[t.category] ?? 0) + t.amount;
   }
   const byCategoryLines = Object.entries(byCategory)
@@ -249,12 +257,46 @@ function buildGrounding(
     .map(([cat, amt]) => `  - ${cat}: ${formatMoney(amt, info)}`)
     .join('\n');
 
+  // ── Per-month aggregates across the full history ───────────────────
+  // Gives the LLM context for any month the user asks about, even ones
+  // older than what we'd include verbatim below.
+  const monthly: Record<
+    string,
+    { debits: number; credits: number; debitCount: number; creditCount: number }
+  > = {};
+  for (const t of transactions) {
+    const d = new Date(t.transacted_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!monthly[key]) {
+      monthly[key] = { debits: 0, credits: 0, debitCount: 0, creditCount: 0 };
+    }
+    if (t.transaction_type === 'debit') {
+      monthly[key].debits += t.amount;
+      monthly[key].debitCount += 1;
+    } else {
+      monthly[key].credits += t.amount;
+      monthly[key].creditCount += 1;
+    }
+  }
+  const monthlyLines = Object.entries(monthly)
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(
+      ([m, agg]) =>
+        `  - ${m}: spent ${formatMoney(agg.debits, info)} (${agg.debitCount} tx)` +
+        (agg.credits > 0
+          ? `, earned ${formatMoney(agg.credits, info)} (${agg.creditCount} tx)`
+          : ''),
+    )
+    .join('\n');
+
+  // ── Most recent 30 transactions verbatim ──────────────────────────
   const recentLines = transactions
-    .slice(0, 25)
+    .slice(0, 30)
     .map((t) => {
       const date = new Date(t.transacted_at).toLocaleDateString(info.locale, {
         day: 'numeric',
         month: 'short',
+        year: 'numeric',
       });
       const sign = t.transaction_type === 'debit' ? '-' : '+';
       return `  - ${date}: ${sign}${formatMoney(t.amount, info)}  ${t.merchant}  [${t.category}]`;
@@ -266,14 +308,18 @@ function buildGrounding(
 Name: ${profile.name}
 Currency: ${info.name} (${currencyCode})
 Monthly budget: ${formatMoney(budget, info)}
-
+${profile.expected_monthly_income > 0 ? `Expected monthly income: ${formatMoney(profile.expected_monthly_income, info)}\n` : ''}
 This calendar month (so far):
-  Spent (debits only): ${formatMoney(monthSpent, info)} (${pct}% of budget)
-  Remaining: ${formatMoney(Math.max(0, budget - monthSpent), info)}
-  Breakdown:
+  Spent (debits): ${formatMoney(monthSpent, info)} (${pct}% of budget)
+  Earned (credits): ${formatMoney(monthEarned, info)}
+  Net: ${formatMoney(monthEarned - monthSpent, info)}
+  Spending breakdown:
 ${byCategoryLines || '  (no debits yet this month)'}
 
-Last 25 transactions (most recent first, last 60 days):
+Per-month totals across the user's full history (most recent first):
+${monthlyLines || '  (no transactions yet)'}
+
+Latest 30 transactions verbatim (most recent first):
 ${recentLines || '  (none)'}`;
 }
 
