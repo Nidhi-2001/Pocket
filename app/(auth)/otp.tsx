@@ -68,7 +68,16 @@ export default function Otp() {
       return;
     }
     console.log('verifyOtp success, session:', !!result.data.session);
-    router.replace('/setup');
+
+    // Returning users (name already filled) skip the setup screen and go
+    // straight to the tabs home. Only brand-new users (the trigger sets
+    // name to 'there' as a placeholder) see /setup.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name')
+      .maybeSingle();
+    const onboarded = !!profile?.name && profile.name !== 'there';
+    router.replace(onboarded ? '/(tabs)/' : '/setup');
   }
 
   if (step === 'email') {

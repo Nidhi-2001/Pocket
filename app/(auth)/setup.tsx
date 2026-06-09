@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -33,6 +33,20 @@ export default function Setup() {
   const [budget, setBudget] = useState<string>('2000');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Belt-and-braces redirect: if a user lands here but already has a name
+  // set (i.e. they've completed onboarding before), bounce them home.
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .select('name')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name && data.name !== 'there') {
+          router.replace('/(tabs)/');
+        }
+      });
+  }, []);
 
   const cur = getCurrency(currency);
 
