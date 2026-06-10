@@ -86,10 +86,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    const splitwiseKey = Deno.env.get('SPLITWISE_API_KEY');
+    // Per-user OAuth token if the user connected Splitwise; otherwise fall
+    // back to the shared test key so the dev/test flow keeps working.
+    let splitwiseKey = Deno.env.get('SPLITWISE_API_KEY');
+    const { data: conn } = await supabase
+      .from('splitwise_connections')
+      .select('access_token')
+      .maybeSingle();
+    if (conn?.access_token) splitwiseKey = conn.access_token;
     if (!splitwiseKey) {
-      console.error('SPLITWISE_API_KEY env var is not set');
-      return json({ error: 'Server misconfigured: missing SPLITWISE_API_KEY' }, 500);
+      return json({ error: 'Splitwise not connected' }, 400);
     }
 
     const swRes = await fetch(

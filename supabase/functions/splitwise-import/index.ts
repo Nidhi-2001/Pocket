@@ -85,9 +85,15 @@ Deno.serve(async (req) => {
       return json({ error: 'Invalid auth', detail: userError?.message }, 401);
     }
 
-    const splitwiseKey = Deno.env.get('SPLITWISE_API_KEY');
+    // Per-user OAuth token if connected; else shared test key fallback.
+    let splitwiseKey = Deno.env.get('SPLITWISE_API_KEY');
+    const { data: conn } = await supabase
+      .from('splitwise_connections')
+      .select('access_token')
+      .maybeSingle();
+    if (conn?.access_token) splitwiseKey = conn.access_token;
     if (!splitwiseKey) {
-      return json({ error: 'Server misconfigured: missing SPLITWISE_API_KEY' }, 500);
+      return json({ error: 'Splitwise not connected' }, 400);
     }
     const swHeaders = { Authorization: `Bearer ${splitwiseKey}` };
 

@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { CategoryBudgetsCard } from '../../components/profile/CategoryBudgetsCard';
+import { SplitwiseConnectCard } from '../../components/profile/SplitwiseConnectCard';
 import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
 import {
   type CurrencyCode,
@@ -262,8 +263,9 @@ export default function ProfileTab() {
       </View>
 
       {!editing && (
-        <View className="px-6 mb-3">
+        <View className="px-6 mb-3 gap-3">
           <CategoryBudgetsCard />
+          <SplitwiseConnectCard />
         </View>
       )}
 
