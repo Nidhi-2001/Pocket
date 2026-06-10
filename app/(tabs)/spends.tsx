@@ -11,6 +11,7 @@ import {
 import { CashFlowChart, type FlowSegment } from '../../components/spends/CashFlowChart';
 import { DonutChart, type DonutSegment } from '../../components/spends/DonutChart';
 import { OwedBarChart } from '../../components/spends/OwedBarChart';
+import { SplitwiseImportButton } from '../../components/spends/SplitwiseImportButton';
 import { categories, type CategoryKey } from '../../constants/theme';
 import { useCategoryBudgets } from '../../hooks/useCategoryBudgets';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -111,7 +112,7 @@ export default function SpendsTab() {
     return { since: s, until: endOfDay, dateError: null };
   }, [range, customStart, customEnd]);
 
-  const { transactions, loading } = useTransactions({
+  const { transactions, loading, refetch: refetchTxs } = useTransactions({
     since: range === 'custom' && dateError ? new Date() : since,
     until,
   });
@@ -289,6 +290,7 @@ export default function SpendsTab() {
             </Text>
           </View>
         )}
+        <SplitwiseImportButton onImported={refetchTxs} />
       </View>
 
       {loading ? (
