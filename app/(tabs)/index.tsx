@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { AddIncomeCard } from '../../components/home/AddIncomeCard';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
+import { NetPositionCard } from '../../components/home/NetPositionCard';
 import { NudgeCard } from '../../components/home/NudgeCard';
 import { PersonalityCard } from '../../components/home/PersonalityCard';
 import { TransactionRow } from '../../components/home/TransactionRow';
@@ -91,6 +92,10 @@ export default function HomeTab() {
           expenses={monthlySpent}
           expectedIncome={profile?.expected_monthly_income ?? 0}
         />
+      </View>
+
+      <View className="px-6 mb-6">
+        <NetPositionCard />
       </View>
 
       {personality && (
