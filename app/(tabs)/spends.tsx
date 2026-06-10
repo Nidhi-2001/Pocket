@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { CashFlowChart, type FlowSegment } from '../../components/spends/CashFlowChart';
 import { DonutChart, type DonutSegment } from '../../components/spends/DonutChart';
+import { OwedBarChart } from '../../components/spends/OwedBarChart';
 import { categories, type CategoryKey } from '../../constants/theme';
 import { useCategoryBudgets } from '../../hooks/useCategoryBudgets';
 import { useCurrency } from '../../hooks/useCurrency';
+import { useSplitwiseBalances } from '../../hooks/useSplitwiseBalances';
 import { useTransactions } from '../../hooks/useTransactions';
 import { getCurrency } from '../../lib/currency';
 import { formatCurrency, formatDateOnly } from '../../lib/formatters';
@@ -68,6 +70,11 @@ export default function SpendsTab() {
   const [customStart, setCustomStart] = useState<string>(daysAgoYmd(30));
   const [customEnd, setCustomEnd] = useState<string>(todayYmd());
   const { byCategory: budgetByCategory } = useCategoryBudgets();
+  const {
+    balances: swBalances,
+    loading: swLoading,
+    error: swError,
+  } = useSplitwiseBalances();
 
   const { since, until, dateError } = useMemo(() => {
     const now = new Date();
@@ -244,6 +251,44 @@ export default function SpendsTab() {
           expenses={debitsForChart}
           currency={currency}
         />
+      </View>
+
+      {/* === SPLITWISE: WHO YOU OWE === */}
+      <View className="px-6 mt-2 mb-3 flex-row items-center gap-2">
+        <View
+          className="w-7 h-7 rounded-full items-center justify-center"
+          style={{ backgroundColor: '#F43F5E22' }}
+        >
+          <Ionicons name="people-outline" size={14} color="#F43F5E" />
+        </View>
+        <Text className="text-xl font-bold text-text-primary">Splits</Text>
+      </View>
+      <View className="px-6 mb-6">
+        {swLoading ? (
+          <View className="bg-surface border border-border rounded-2xl p-6 items-center">
+            <ActivityIndicator />
+          </View>
+        ) : swError ? (
+          <View className="bg-surface border border-border rounded-2xl p-6 items-center">
+            <Text className="text-3xl mb-2">🔌</Text>
+            <Text className="text-sm text-text-secondary text-center">
+              Couldn&apos;t load Splitwise balances.
+            </Text>
+          </View>
+        ) : swBalances && swBalances.owe.length > 0 ? (
+          <OwedBarChart
+            items={swBalances.owe}
+            totalMinor={swBalances.totalOweMinor}
+            currency={swBalances.currency}
+          />
+        ) : (
+          <View className="bg-surface border border-border rounded-2xl p-6 items-center">
+            <Text className="text-3xl mb-2">🤝</Text>
+            <Text className="text-sm text-text-secondary text-center">
+              You&apos;re all settled up on Splitwise.
+            </Text>
+          </View>
+        )}
       </View>
 
       {loading ? (
