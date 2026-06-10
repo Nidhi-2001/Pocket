@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { AddIncomeCard } from '../../components/home/AddIncomeCard';
+import { AddTransactionCard } from '../../components/home/AddTransactionCard';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
 import { NetPositionCard } from '../../components/home/NetPositionCard';
 import { NudgeCard } from '../../components/home/NudgeCard';
@@ -115,7 +115,7 @@ export default function HomeTab() {
           <View className="bg-surface border border-border rounded-2xl p-6 items-center">
             <Text className="text-3xl mb-2">📭</Text>
             <Text className="text-text-secondary text-center text-sm">
-              No transactions yet. Paste a bank SMS below to add one.
+              No transactions yet. Add one below.
             </Text>
           </View>
         ) : (
@@ -175,7 +175,7 @@ export default function HomeTab() {
           Add transactions
         </Text>
         <View className="gap-3">
-          <AddIncomeCard onSuccess={refetchTxs} />
+          <AddTransactionCard onSuccess={refetchTxs} />
           <UploadStatementCard onSuccess={refetchTxs} />
         </View>
       </View>

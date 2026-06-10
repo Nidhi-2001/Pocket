@@ -581,8 +581,8 @@ function IncomeSection({ credits, totalIncome, currency }: IncomeSectionProps) {
         <View className="bg-surface border border-border rounded-2xl p-6 items-center">
           <Text className="text-3xl mb-2">💼</Text>
           <Text className="text-sm text-text-secondary text-center">
-            No income in this range yet. Use &quot;Add income&quot; on Home to
-            log salary, freelance, or transfers in.
+            No income in this range yet. Use &quot;Add a transaction&quot; on
+            Home to log salary, freelance, or transfers in.
           </Text>
         </View>
       </View>
