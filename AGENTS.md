@@ -98,9 +98,41 @@ Breaking any of these is a bug, even if tests pass.
 | 4     | Home / Spends / Transaction detail screens        | ✅ done |
 | 5     | `chat-agent` edge function + chat screen          | ✅ done |
 | 6     | Goals + nudge + personality (cron scheduling TBD) | ✅ done |
+| 7     | `parse-statement` edge function — PDF upload (unpdf + Groq) | ✅ done |
+| 8     | Income tracking + per-category budgets + unified cash-flow chart | ✅ done |
+| 9     | Splitwise integration (see section below)         | ✅ done |
 
 When you finish a sub-step, commit and update the README status table
 (`## Status` section) so the repo's own docs track reality.
+
+---
+
+## Splitwise integration
+
+Folds a user's Splitwise activity into Pocket. Two distinct facts per expense:
+the amount they **paid** (money that left their card → a Pocket transaction) and
+the amount they **owe** (a liability → analytics only, never a transaction).
+
+- **Edge functions** (`supabase/functions/`): `splitwise-balances` (per-friend
+  "you owe" balances for the bar chart), `splitwise-import` (imports each
+  expense's `paid_share` as a debit transaction, idempotent via the transactions
+  dedup index, deterministic Splitwise→Pocket category map), `splitwise-oauth`
+  (OAuth2 code→token exchange). All hit `https://secure.splitwise.com/api/v3.0/`.
+- **Auth:** per-user OAuth2 token in `splitwise_connections` (migration 0006,
+  owner RLS), with a fallback to a shared `SPLITWISE_API_KEY` secret for
+  dev/test. `SPLITWISE_CLIENT_SECRET` is server-only; the public
+  `EXPO_PUBLIC_SPLITWISE_CLIENT_ID` is in the bundle. Registered OAuth callback:
+  `http://localhost:8081/splitwise-callback` (web-first; native deep-link TBD).
+- **UI:** `OwedBarChart` + import button on Spends, `SplitwiseConnectCard` on
+  Profile, the `/splitwise-callback` route, and a cumulative `NetPositionCard`
+  on Home (`useNetPosition`) that nets all transactions against the live
+  Splitwise balance.
+
+### Applying migrations via the Supabase Management API
+
+`POST https://api.supabase.com/v1/projects/<ref>/database/query` with a personal
+access token runs SQL — but you **must send a browser `User-Agent`** header or
+Cloudflare returns `403 "error code: 1010"`.
 
 ---
 

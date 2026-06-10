@@ -31,18 +31,23 @@ but the roadmap below is the source of truth for direction.
 
 ## Status
 
-**Current phase: all six MVP phases complete.** Cron scheduling and landing page are the remaining optional polish.
+**MVP Phases 0–6 plus Phases 7–8 and a Splitwise integration (Phase 9) are
+complete.** Cron scheduling and a landing page are the remaining optional polish.
 
-| # | Phase                                            | Status |
-| - | ------------------------------------------------ | ------ |
-| 0 | Foundation: Expo + NativeWind + GitHub           | ✅      |
-| 1 | Backend: Supabase project + schema + RLS         | ✅      |
-| 2 | Auth + onboarding screens (email OTP)            | ✅      |
-| 3 | SMS parser edge function (Groq)                  | ✅      |
-| 4 | Core screens: Home, Spends, Transaction detail   | ✅      |
-| 5 | AI chat edge function (Groq) + chat screen       | ✅      |
-| 6 | Goals + nudges + monthly personality             | ✅\*    |
-| + | Landing page (Vercel) — only for Play Store      | ☐      |
+| # | Phase                                              | Status |
+| - | -------------------------------------------------- | ------ |
+| 0 | Foundation: Expo + NativeWind + GitHub             | ✅      |
+| 1 | Backend: Supabase project + schema + RLS           | ✅      |
+| 2 | Auth + onboarding screens (email OTP)              | ✅      |
+| 3 | SMS parser edge function (Groq)                    | ✅      |
+| 4 | Core screens: Home, Spends, Transaction detail     | ✅      |
+| 5 | AI chat edge function (Groq) + chat screen         | ✅      |
+| 6 | Goals + nudges + monthly personality               | ✅\*    |
+| 7 | PDF statement upload (`parse-statement`, Groq)     | ✅      |
+| 8 | Income tracking + per-category budgets + cash flow | ✅      |
+| 9 | Splitwise: "you owe" chart, import paid expenses, OAuth connect, cumulative Net position | ✅ |
+| + | Cron scheduling for nudges / personality           | ☐      |
+| + | Landing page (Vercel) — only for Play Store        | ☐      |
 
 \* Phase 6 is functionally complete: Goals UI, `goal-nudge` and `personality`
 edge functions, and Home surfacing all work. Cron *scheduling* (so the
@@ -51,11 +56,16 @@ isn't wired up — for now both functions can be invoked on-demand from
 Home's "Pocket insights" buttons. Set up via Supabase dashboard or
 pg_cron when ready for production.
 
+All AI agents (SMS parser, statement parser, chat, personality, nudges) run on
+**Groq `llama-3.3-70b-versatile`** — not Gemini or Mistral.
+
 What runs today: the app is a working spending dashboard. A signed-in user can
 - complete the email-OTP onboarding (welcome → SMS-permission → OTP → setup),
-- paste a bank SMS on Home and watch it parse into a real transaction row,
-- see month-to-date spend vs budget in a hero card,
-- browse recent transactions on Home and a category donut breakdown on Spends,
+- log transactions manually on Home — expenses (with a category) or income — since this build doesn't read SMS,
+- upload a credit-card / bank statement PDF and have every transaction parsed in,
+- connect Splitwise (OAuth) to see what they owe per person, and import the expenses they paid as transactions,
+- see month-to-date spend vs budget plus a cumulative "Net position" (transactions netted against the Splitwise balance) on Home,
+- browse recent transactions on Home and a category donut + income/expense cash-flow breakdown on Spends,
 - tap a transaction to open a full-screen detail, change its category, or delete it,
 - navigate between 5 tabs (Home, Spends, Goals, Chat, Profile) with persistent state and refetch-on-focus so edits propagate instantly.
 
@@ -76,9 +86,9 @@ Five-feature MVP:
 5. **Monthly Spending Personality** — a short, shareable "what your spending
    says about you" card generated once per month.
 
-Target user: a college student / young professional in India who already gets
-bank SMS, wants to understand where their money goes, and doesn't want to
-maintain a spreadsheet.
+Target user: a young adult (anywhere in the world, any supported currency) who
+wants to understand where their money goes — logging spend manually, importing
+statements, or syncing Splitwise — without maintaining a spreadsheet.
 
 ---
 
@@ -121,16 +131,18 @@ and anon key, which are RLS-gated and safe to ship.
 │  │  Postgres   │   │  Edge Functions (Deno)   │ │
 │  │  + RLS      │◄──┤  service-role key inside │ │
 │  │  + auth     │   │                          │ │
-│  └─────────────┘   │  - parse-sms  → Groq     │ │
-│                    │  - chat-agent → Gemini   │ │
-│                    │  - personality → Mistral │ │
-│                    │  - goal-nudge (cron)     │ │
+│  └─────────────┘   │  - parse-sms    → Groq   │ │
+│                    │  - parse-statement→ Groq │ │
+│                    │  - chat-agent   → Groq   │ │
+│                    │  - personality  → Groq   │ │
+│                    │  - goal-nudge   → Groq   │ │
+│                    │  - splitwise-*  → SW API │ │
 │                    └──────────────────────────┘ │
 └──────────────────────────────────────────────────┘
                               │
                               ▼
-                  External AI provider APIs
-                  (Groq / Gemini / Mistral)
+                  External APIs: Groq (all AI)
+                  + Splitwise (balances / expenses)
 ```
 
 Key invariant: **the React Native bundle never calls an AI provider directly.**
@@ -161,9 +173,11 @@ npx expo start --web
 # open http://localhost:8081
 ```
 
-Then run the SQL in `supabase/migrations/0001_initial_schema.sql` against your
-Supabase project (SQL Editor → paste → run) to create the tables. Configure
-email OTP per [Phase 2.3 notes in `AGENTS.md`](./AGENTS.md).
+Then run the migrations in `supabase/migrations/` in order (0001 → 0006)
+against your Supabase project (SQL Editor → paste → run) to create the tables.
+Configure email OTP per [Phase 2.3 notes in `AGENTS.md`](./AGENTS.md). For the
+Splitwise integration, set the `SPLITWISE_*` secrets and deploy the
+`supabase/functions/splitwise-*` edge functions.
 
 ---
 
