@@ -56,7 +56,12 @@ export interface Goal {
 export interface Nudge {
   id: string;
   user_id: string;
-  type: 'budget_warning' | 'goal_check' | 'weekly_digest' | 'personality';
+  type:
+    | 'budget_warning'
+    | 'goal_check'
+    | 'weekly_digest'
+    | 'personality'
+    | 'daily_reminder';
   message: string;
   read: boolean;
   created_at: string;

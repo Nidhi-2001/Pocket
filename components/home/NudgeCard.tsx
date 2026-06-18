@@ -12,6 +12,7 @@ const TYPE_META: Record<Nudge['type'], { emoji: string; tint: string }> = {
   goal_check: { emoji: '🎯', tint: '#4F46E5' },
   weekly_digest: { emoji: '📊', tint: '#10B981' },
   personality: { emoji: '✨', tint: '#8B5CF6' },
+  daily_reminder: { emoji: '📝', tint: '#F59E0B' },
 };
 
 export function NudgeCard({ nudge, onDismiss }: NudgeCardProps) {

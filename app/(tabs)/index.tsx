@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -18,6 +18,7 @@ import { useNudges } from '../../hooks/useNudges';
 import { usePersonality } from '../../hooks/usePersonality';
 import { useProfile } from '../../hooks/useProfile';
 import { useTransactions } from '../../hooks/useTransactions';
+import { runNudgeChecks } from '../../lib/nudges';
 import { supabase } from '../../lib/supabase';
 
 export default function HomeTab() {
@@ -30,6 +31,14 @@ export default function HomeTab() {
     null,
   );
   const [genError, setGenError] = useState<string | null>(null);
+
+  // On app open, generate any due alerts (daily reminder, weekend summary,
+  // budget warning) and surface them.
+  useEffect(() => {
+    runNudgeChecks().then((created) => {
+      if (created > 0) refetchNudges();
+    });
+  }, [refetchNudges]);
 
   const monthStart = new Date(
     new Date().getFullYear(),
@@ -47,7 +56,6 @@ export default function HomeTab() {
     .reduce((sum, tx) => sum + tx.amount, 0);
 
   const recentFive = transactions.slice(0, 5);
-  const topNudge = nudges[0];
 
   async function generate(kind: 'nudge' | 'personality') {
     setGenerating(kind);
@@ -80,9 +88,11 @@ export default function HomeTab() {
         </Text>
       </View>
 
-      {topNudge && (
-        <View className="px-6 mb-4">
-          <NudgeCard nudge={topNudge} onDismiss={() => markRead(topNudge.id)} />
+      {nudges.length > 0 && (
+        <View className="px-6 mb-4 gap-3">
+          {nudges.map((n) => (
+            <NudgeCard key={n.id} nudge={n} onDismiss={() => markRead(n.id)} />
+          ))}
         </View>
       )}
 
