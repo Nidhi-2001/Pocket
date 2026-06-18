@@ -41,6 +41,19 @@ interface TransactionLite {
   transacted_at: string;
 }
 
+interface SwBalanceItem {
+  name: string;
+  amountMinor: number;
+  currency: string;
+}
+
+interface SplitwiseBalances {
+  connected: boolean;
+  owe: SwBalanceItem[];
+  owedToMe: SwBalanceItem[];
+  totalOweMinor: number;
+}
+
 interface CurrencyInfo {
   symbol: string;
   name: string;
@@ -70,7 +83,7 @@ function buildSystemPrompt(code: string, todayIso: string): string {
 
 Today's date is ${todayIso}. The current year is ${currentYear}.
 
-You have the user's real recent transactions, monthly budget, and month-to-date breakdown (provided in the next message). Use that data to answer concretely. Never invent numbers or transactions you don't see.
+You have the user's real recent transactions, monthly budget, month-to-date breakdown, and — when they've connected Splitwise — their Splitwise balances (who they owe and who owes them), all provided in the next message. Use that data to answer concretely, including questions about money owed on Splitwise. Never invent numbers or transactions you don't see. If Splitwise is not connected, say so when asked about it.
 
 The user's currency is ${info.name} (${code}, symbol ${info.symbol}). Always format money in ${code} — use the symbol ${info.symbol} and the appropriate locale conventions (commas/decimals).
 
@@ -88,6 +101,56 @@ Style:
 - No legal/financial disclaimers. No "I'm an AI" preambles. Just answer.
 
 Categories you'll see: Food, Transport, Shopping, Entertainment, Other.`;
+}
+
+// Fetch the user's Splitwise balances server-side so chat can answer "how much
+// do I owe" questions. Uses the per-user OAuth token from splitwise_connections
+// (falls back to the shared SPLITWISE_API_KEY). Mirrors the splitwise-balances
+// function; balances are signed (negative = the user owes).
+async function fetchSplitwiseBalances(supabase: any): Promise<SplitwiseBalances> {
+  const empty: SplitwiseBalances = { connected: false, owe: [], owedToMe: [], totalOweMinor: 0 };
+  let token = Deno.env.get('SPLITWISE_API_KEY') ?? '';
+  const { data: conn } = await supabase
+    .from('splitwise_connections')
+    .select('access_token')
+    .maybeSingle();
+  if (conn?.access_token) token = conn.access_token as string;
+  if (!token) return empty;
+
+  try {
+    const res = await fetch('https://secure.splitwise.com/api/v3.0/get_friends', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return { ...empty, connected: true };
+    const data = await res.json();
+    const friends: any[] = Array.isArray(data?.friends) ? data.friends : [];
+    const owe: SwBalanceItem[] = [];
+    const owedToMe: SwBalanceItem[] = [];
+    let totalOweMinor = 0;
+    for (const f of friends) {
+      const name = `${f.first_name ?? ''} ${f.last_name ?? ''}`.trim() || 'Unknown';
+      const balances: any[] = Array.isArray(f.balance) ? f.balance : [];
+      for (const b of balances) {
+        const amt = parseFloat(b.amount);
+        if (!isFinite(amt) || amt === 0) continue;
+        const cc = (b.currency_code as string) ?? 'USD';
+        const decimals = (CURRENCY_INFO[cc] ?? CURRENCY_INFO.USD).decimals;
+        const minor = Math.round(Math.abs(amt) * Math.pow(10, decimals));
+        const item: SwBalanceItem = { name, amountMinor: minor, currency: cc };
+        if (amt < 0) {
+          owe.push(item);
+          totalOweMinor += minor;
+        } else {
+          owedToMe.push(item);
+        }
+      }
+    }
+    owe.sort((a, b) => b.amountMinor - a.amountMinor);
+    owedToMe.sort((a, b) => b.amountMinor - a.amountMinor);
+    return { connected: true, owe, owedToMe, totalOweMinor };
+  } catch (_) {
+    return { ...empty, connected: true };
+  }
 }
 
 Deno.serve(async (req) => {
@@ -166,7 +229,7 @@ Deno.serve(async (req) => {
     // Pull the user's full recent history — up to 200 most recent
     // transactions across all time — so chat can answer questions about
     // any month, not just the trailing two-month window.
-    const [profileRes, txRes] = await Promise.all([
+    const [profileRes, txRes, swBalances] = await Promise.all([
       supabase
         .from('profiles')
         .select('name, monthly_budget, currency, expected_monthly_income')
@@ -176,13 +239,14 @@ Deno.serve(async (req) => {
         .select('amount, merchant, category, transaction_type, transacted_at')
         .order('transacted_at', { ascending: false })
         .limit(200),
+      fetchSplitwiseBalances(supabase),
     ]);
 
     const profile = (profileRes.data ?? null) as ProfileLite | null;
     const transactions = (txRes.data ?? []) as TransactionLite[];
     const currencyCode = (profile?.currency as string | undefined) ?? 'USD';
 
-    const groundingText = buildGrounding(profile, transactions, now, currencyCode);
+    const groundingText = buildGrounding(profile, transactions, swBalances, now, currencyCode);
 
     const todayIso = now.toISOString().slice(0, 10);
     const groqMessages = [
@@ -234,6 +298,7 @@ Deno.serve(async (req) => {
 function buildGrounding(
   profile: ProfileLite | null,
   transactions: TransactionLite[],
+  splitwise: SplitwiseBalances,
   now: Date,
   currencyCode: string,
 ): string {
@@ -313,6 +378,33 @@ function buildGrounding(
     })
     .join('\n');
 
+  // ── Splitwise balances ─────────────────────────────────────────────
+  let swSection: string;
+  if (!splitwise.connected) {
+    swSection = 'Splitwise: not connected (no Splitwise balance data available).';
+  } else if (splitwise.owe.length === 0 && splitwise.owedToMe.length === 0) {
+    swSection =
+      'Splitwise: connected and fully settled — the user owes nothing and nobody owes them.';
+  } else {
+    const oweLines = splitwise.owe
+      .map(
+        (i) =>
+          `  - You owe ${i.name}: ${formatMoney(i.amountMinor, CURRENCY_INFO[i.currency] ?? info)}`,
+      )
+      .join('\n');
+    const owedLines = splitwise.owedToMe
+      .map(
+        (i) =>
+          `  - ${i.name} owes you: ${formatMoney(i.amountMinor, CURRENCY_INFO[i.currency] ?? info)}`,
+      )
+      .join('\n');
+    swSection =
+      `Splitwise balances (connected):\n` +
+      `  Total you owe: ${formatMoney(splitwise.totalOweMinor, info)}\n` +
+      (oweLines ? oweLines + '\n' : '') +
+      owedLines;
+  }
+
   return `USER CONTEXT (real data — use these numbers, do not invent others):
 
 Name: ${profile.name}
@@ -328,6 +420,8 @@ ${byCategoryLines || '  (no debits yet this month)'}
 
 Per-month totals across the user's full history (most recent first):
 ${monthlyLines || '  (no transactions yet)'}
+
+${swSection}
 
 Latest 30 transactions verbatim (most recent first):
 ${recentLines || '  (none)'}`;
