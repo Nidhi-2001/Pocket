@@ -185,6 +185,37 @@ Deno.serve(async (req) => {
         return json({ error: 'Insert failed', detail: insErr.message }, 500);
       }
       inserted = toInsert.length;
+
+      // Best-effort device push for the alerts just created. Dormant until a
+      // device build registers tokens in push_tokens; never fails the run.
+      try {
+        const userIds = [...new Set(toInsert.map((n) => n.user_id))];
+        const { data: tokens } = await admin
+          .from('push_tokens')
+          .select('user_id, token')
+          .in('user_id', userIds);
+        const byUser: Record<string, string[]> = {};
+        for (const t of (tokens as any[]) ?? []) {
+          (byUser[t.user_id] ??= []).push(t.token);
+        }
+        const messages = toInsert.flatMap((n) =>
+          (byUser[n.user_id] ?? []).map((to) => ({
+            to,
+            title: 'Pocket',
+            body: n.message,
+            sound: 'default',
+          })),
+        );
+        if (messages.length > 0) {
+          await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(messages),
+          });
+        }
+      } catch (e) {
+        console.warn('push send skipped:', e);
+      }
     }
 
     return json({ usersConsidered: considered, alertsInserted: inserted });

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { CurrencyContext } from '../hooks/useCurrency';
 import { useProfile } from '../hooks/useProfile';
 import { DEFAULT_CURRENCY } from '../lib/currency';
+import { registerForPushNotifications } from '../lib/push';
 import { supabase } from '../lib/supabase';
 
 export default function RootLayout() {
@@ -35,6 +36,11 @@ export default function RootLayout() {
       router.replace('/welcome');
     }
   }, [session, initialized, segments, router]);
+
+  // Register this device for push once signed in (no-op on web).
+  useEffect(() => {
+    if (session) registerForPushNotifications();
+  }, [session]);
 
   return (
     <CurrencyContext.Provider value={profile?.currency ?? DEFAULT_CURRENCY}>
