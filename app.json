@@ -27,6 +27,13 @@
     "plugins": [
       "expo-router",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4aa3aec5-aab0-401a-9248-9390f25f7775"
+      }
+    },
+    "owner": "saidheerajmalkar"
   }
 }

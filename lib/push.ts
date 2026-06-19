@@ -35,8 +35,16 @@ export async function registerForPushNotifications(): Promise<void> {
     }
     if (!granted) return;
 
-    // NOTE: on a real dev build pass { projectId: '<eas-project-id>' } here.
-    const tokenResp = await Notifications.getExpoPushTokenAsync();
+    // projectId is written into app config by `eas init`. It's required for
+    // getExpoPushTokenAsync on a dev build / standalone app.
+    const Constants = (await import('expo-constants')).default;
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      (Constants as { easConfig?: { projectId?: string } })?.easConfig
+        ?.projectId;
+    const tokenResp = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined,
+    );
     const token = tokenResp.data;
     if (!token) return;
 
