@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { AddTransactionCard } from '../../components/home/AddTransactionCard';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
 import { NetPositionCard } from '../../components/home/NetPositionCard';
@@ -32,13 +33,16 @@ export default function HomeTab() {
   );
   const [genError, setGenError] = useState<string | null>(null);
 
-  // On app open, generate any due alerts (daily reminder, weekend summary,
-  // budget warning) and surface them.
-  useEffect(() => {
-    runNudgeChecks().then((created) => {
-      if (created > 0) refetchNudges();
-    });
-  }, [refetchNudges]);
+  // Generate any due alerts (daily reminder, weekend summary, budget warning)
+  // whenever Home gains focus — so changing the budget on Profile and coming
+  // back re-checks. Deduped inside runNudgeChecks so it won't spam.
+  useFocusEffect(
+    useCallback(() => {
+      runNudgeChecks().then((created) => {
+        if (created > 0) refetchNudges();
+      });
+    }, [refetchNudges]),
+  );
 
   const monthStart = new Date(
     new Date().getFullYear(),
