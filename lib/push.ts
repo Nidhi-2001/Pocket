@@ -56,3 +56,52 @@ export async function registerForPushNotifications(): Promise<void> {
     console.warn('registerForPushNotifications skipped:', e);
   }
 }
+
+// Daily LOCAL reminder — the device fires it at REMINDER_HOUR:REMINDER_MINUTE
+// every day, even when the app is closed, with no server involved. Works in a
+// dev build and (for local notifications) in Expo Go on Android. No-op on web.
+const DAILY_REMINDER_ID = 'pocket-daily-reminder';
+const REMINDER_HOUR = 20; // 8 PM local — change this to move the reminder time
+const REMINDER_MINUTE = 0;
+
+export async function scheduleDailyReminder(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const Notifications = await import('expo-notifications');
+
+    const existing = await Notifications.getPermissionsAsync();
+    let granted = existing.status === 'granted';
+    if (!granted) {
+      const req = await Notifications.requestPermissionsAsync();
+      granted = req.status === 'granted';
+    }
+    if (!granted) return;
+
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('reminders', {
+        name: 'Reminders',
+        importance: Notifications.AndroidImportance.DEFAULT,
+      });
+    }
+
+    // Idempotent: drop any prior schedule, then (re)schedule the daily reminder.
+    await Notifications.cancelScheduledNotificationAsync(DAILY_REMINDER_ID).catch(
+      () => {},
+    );
+    await Notifications.scheduleNotificationAsync({
+      identifier: DAILY_REMINDER_ID,
+      content: {
+        title: 'Pocket',
+        body: 'Spent anything today? Log it so your dashboard and budget stay accurate.',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour: REMINDER_HOUR,
+        minute: REMINDER_MINUTE,
+        channelId: 'reminders',
+      },
+    });
+  } catch (e) {
+    console.warn('scheduleDailyReminder skipped:', e);
+  }
+}
