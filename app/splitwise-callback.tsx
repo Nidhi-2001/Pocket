@@ -1,7 +1,7 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { splitwiseRedirectUri } from '../lib/splitwise';
+import { consumePendingState, splitwiseRedirectUri } from '../lib/splitwise';
 import { supabase } from '../lib/supabase';
 
 type Status = 'working' | 'done' | 'error';
@@ -14,6 +14,11 @@ type Status = 'working' | 'done' | 'error';
  */
 export default function SplitwiseCallback() {
   const router = useRouter();
+  // expo-router populates these from the URL query (web) and the deep-link
+  // params (native), so this works on both platforms.
+  const params = useLocalSearchParams<{ code?: string; state?: string }>();
+  const code = typeof params.code === 'string' ? params.code : null;
+  const returnedState = typeof params.state === 'string' ? params.state : null;
   const [status, setStatus] = useState<Status>('working');
   const [detail, setDetail] = useState('');
   const ran = useRef(false);
@@ -23,22 +28,12 @@ export default function SplitwiseCallback() {
     ran.current = true;
 
     (async () => {
-      let code: string | null = null;
-      let returnedState: string | null = null;
-      let savedState: string | null = null;
-      if (typeof window !== 'undefined') {
-        const sp = new URLSearchParams(window.location.search);
-        code = sp.get('code');
-        returnedState = sp.get('state');
-        savedState = window.localStorage.getItem('sw_oauth_state');
-        window.localStorage.removeItem('sw_oauth_state');
-      }
-
       if (!code) {
         setStatus('error');
         setDetail('No authorization code was returned by Splitwise.');
         return;
       }
+      const savedState = consumePendingState();
       if (savedState && returnedState && savedState !== returnedState) {
         setStatus('error');
         setDetail('Security check failed (state mismatch). Please try again.');
@@ -58,7 +53,7 @@ export default function SplitwiseCallback() {
       setStatus('done');
       setTimeout(() => router.replace('/(tabs)/profile'), 900);
     })();
-  }, [router]);
+  }, [router, code, returnedState]);
 
   return (
     <View className="flex-1 bg-background items-center justify-center px-8">

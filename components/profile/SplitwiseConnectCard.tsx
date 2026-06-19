@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import * as Linking from 'expo-linking';
+import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import { useSplitwiseConnection } from '../../hooks/useSplitwiseConnection';
 import { buildSplitwiseAuthorizeUrl } from '../../lib/splitwise';
 import { supabase } from '../../lib/supabase';
@@ -16,11 +17,15 @@ function randomState(): string {
 export function SplitwiseConnectCard() {
   const { connected, refetch } = useSplitwiseConnection();
 
-  function connect() {
-    if (typeof window === 'undefined') return;
-    const state = randomState();
-    window.localStorage.setItem('sw_oauth_state', state);
-    window.location.href = buildSplitwiseAuthorizeUrl(state);
+  async function connect() {
+    const url = buildSplitwiseAuthorizeUrl(randomState());
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') window.location.href = url;
+    } else {
+      // Opens the system browser; Splitwise redirects back via the
+      // pocket://splitwise-callback deep link to the /splitwise-callback route.
+      await Linking.openURL(url);
+    }
   }
 
   async function disconnect() {
