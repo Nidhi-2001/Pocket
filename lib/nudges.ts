@@ -1,4 +1,5 @@
 import { formatCurrency } from './formatters';
+import { presentLocalNotification } from './push';
 import { supabase } from './supabase';
 
 // Fire the budget warning once month-to-date spend crosses this fraction.
@@ -123,6 +124,15 @@ export async function runNudgeChecks(): Promise<number> {
   if (error) {
     console.error('runNudgeChecks insert error:', error);
     return 0;
+  }
+
+  // Also push event-driven alerts to the OS notification bar (not just the
+  // in-app card). The daily reminder has its own scheduled 8 PM notification,
+  // so skip it here to avoid a duplicate. No-op on web.
+  for (const n of toInsert) {
+    if (n.type === 'budget_warning' || n.type === 'weekly_digest') {
+      await presentLocalNotification('Pocket', n.message);
+    }
   }
   return toInsert.length;
 }

@@ -113,3 +113,46 @@ export async function scheduleDailyReminder(): Promise<void> {
     console.warn('scheduleDailyReminder skipped:', e);
   }
 }
+
+// Fire an immediate OS notification (notification bar) — used to surface
+// event-driven alerts (budget warning, weekend summary) the moment they're
+// generated, even while the app is foregrounded. No-op on web.
+export async function presentLocalNotification(
+  title: string,
+  body: string,
+): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const Notifications = await import('expo-notifications');
+
+    // Show banners even when the app is in the foreground.
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true, // on Android, false hides the drop-down banner
+        shouldSetBadge: false,
+      }),
+    });
+
+    const perm = await Notifications.getPermissionsAsync();
+    if (perm.status !== 'granted') {
+      const req = await Notifications.requestPermissionsAsync();
+      if (req.status !== 'granted') return;
+    }
+
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('alerts', {
+        name: 'Alerts',
+        importance: Notifications.AndroidImportance.HIGH,
+      });
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      content: { title, body },
+      trigger: Platform.OS === 'android' ? { channelId: 'alerts' } : null,
+    });
+  } catch (e) {
+    console.warn('presentLocalNotification skipped:', e);
+  }
+}
