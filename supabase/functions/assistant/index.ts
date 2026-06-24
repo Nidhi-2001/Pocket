@@ -231,9 +231,13 @@ ${recent || '  (none)'}`;
         console.error('insert error', insErr);
         return json({ error: 'Database error' }, 500);
       }
-      const msg = typeof parsed.message === 'string' && parsed.message.trim()
-        ? parsed.message.trim()
-        : `Logged ${fmtMoney(amount, info, code)} · ${inserted.merchant} · ${category}`;
+      // Build the confirmation deterministically (don't trust the LLM's text):
+      // income reads as income; expenses show their category. Income has no
+      // real spending category, so we never surface "Other" for it.
+      const msg =
+        type === 'credit'
+          ? `Logged ${fmtMoney(amount, info, code)} income — ${inserted.merchant}`
+          : `Logged ${fmtMoney(amount, info, code)} at ${inserted.merchant} · ${category}`;
       return json({ action: 'record', message: msg, transaction: inserted });
     }
 
