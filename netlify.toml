@@ -1,0 +1,23 @@
+# Netlify config for the Pocket web app (Expo Router SPA export).
+#
+# Two ways to deploy:
+#  - Drag-drop the `dist/` folder to https://app.netlify.com/drop. SPA routing
+#    is handled by dist/_redirects (copied from public/_redirects on export).
+#    Keys are already baked into the bundle from .env.local — no env setup.
+#  - Connect the GitHub repo: Netlify runs the build below. You MUST set these
+#    in Site settings → Environment (since .env.local is gitignored):
+#      EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY,
+#      EXPO_PUBLIC_SPLITWISE_CLIENT_ID
+
+[build]
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# SPA fallback so client-side routes (/spends, /splitwise-callback, …) resolve.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
