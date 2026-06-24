@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
+import { InsightCard } from '../../components/home/InsightCard';
 import { NetPositionCard } from '../../components/home/NetPositionCard';
 import { NudgeCard } from '../../components/home/NudgeCard';
 import { PersonalityCard } from '../../components/home/PersonalityCard';
@@ -89,6 +90,10 @@ export default function HomeTab() {
         <Text className="text-2xl font-bold text-text-primary">
           Let&apos;s see where your money went.
         </Text>
+      </View>
+
+      <View className="px-6 mb-4">
+        <InsightCard />
       </View>
 
       {nudges.length > 0 && (

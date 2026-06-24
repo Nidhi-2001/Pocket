@@ -67,6 +67,28 @@ export interface Nudge {
   created_at: string;
 }
 
+export interface Insight {
+  id: string;
+  user_id: string;
+  insight_text: string;
+  insight_type:
+    | 'budget_velocity'
+    | 'trend_change'
+    | 'positive'
+    | 'spending_pattern'
+    | 'forecast'
+    | 'splitwise';
+  related_category:
+    | 'Food'
+    | 'Transport'
+    | 'Shopping'
+    | 'Entertainment'
+    | 'Other'
+    | null;
+  created_at: string;
+  dismissed: boolean;
+}
+
 export interface Personality {
   id: string;
   user_id: string;
