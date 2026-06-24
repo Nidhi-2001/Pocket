@@ -109,12 +109,12 @@ Categories you'll see: Food, Transport, Shopping, Entertainment, Other.`;
 // function; balances are signed (negative = the user owes).
 async function fetchSplitwiseBalances(supabase: any): Promise<SplitwiseBalances> {
   const empty: SplitwiseBalances = { connected: false, owe: [], owedToMe: [], totalOweMinor: 0 };
-  let token = Deno.env.get('SPLITWISE_API_KEY') ?? '';
+  // Per-user OAuth token ONLY — no shared fallback.
   const { data: conn } = await supabase
     .from('splitwise_connections')
     .select('access_token')
     .maybeSingle();
-  if (conn?.access_token) token = conn.access_token as string;
+  const token = conn?.access_token as string | undefined;
   if (!token) return empty;
 
   try {

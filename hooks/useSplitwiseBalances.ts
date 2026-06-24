@@ -10,6 +10,7 @@ export interface OwedItem {
 }
 
 export interface SplitwiseBalances {
+  connected: boolean; // false when the user hasn't linked Splitwise
   owe: OwedItem[]; // people the user owes (largest first)
   owedToMe: OwedItem[]; // people who owe the user
   totalOweMinor: number;

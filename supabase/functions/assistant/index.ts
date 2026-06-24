@@ -55,10 +55,10 @@ function fmtMoney(minor: number, info: CurrencyInfo, code: string): string {
 }
 
 async function fetchSplitwiseOwe(supabase: any, info: CurrencyInfo, code: string): Promise<string> {
-  let token = Deno.env.get('SPLITWISE_API_KEY') ?? '';
+  // Per-user OAuth token ONLY — no shared fallback.
   const { data: conn } = await supabase
     .from('splitwise_connections').select('access_token').maybeSingle();
-  if (conn?.access_token) token = conn.access_token;
+  const token = conn?.access_token as string | undefined;
   if (!token) return 'Splitwise: not connected.';
   try {
     const res = await fetch('https://secure.splitwise.com/api/v3.0/get_friends', {

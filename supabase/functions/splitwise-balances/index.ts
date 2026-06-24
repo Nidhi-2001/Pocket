@@ -86,16 +86,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Per-user OAuth token if the user connected Splitwise; otherwise fall
-    // back to the shared test key so the dev/test flow keeps working.
-    let splitwiseKey = Deno.env.get('SPLITWISE_API_KEY');
+    // Per-user OAuth token ONLY — no shared fallback (that would expose one
+    // account's Splitwise data to every user). Not connected → empty set.
     const { data: conn } = await supabase
       .from('splitwise_connections')
       .select('access_token')
       .maybeSingle();
-    if (conn?.access_token) splitwiseKey = conn.access_token;
+    const splitwiseKey = conn?.access_token as string | undefined;
     if (!splitwiseKey) {
-      return json({ error: 'Splitwise not connected' }, 400);
+      return json({ connected: false, owe: [], owedToMe: [], totalOweMinor: 0, currency: 'USD' });
     }
 
     const swRes = await fetch(
@@ -143,7 +142,7 @@ Deno.serve(async (req) => {
     owe.sort((a, b) => b.amountMinor - a.amountMinor);
     owedToMe.sort((a, b) => b.amountMinor - a.amountMinor);
 
-    return json({ owe, owedToMe, totalOweMinor, currency });
+    return json({ connected: true, owe, owedToMe, totalOweMinor, currency });
   } catch (err: any) {
     console.error('Unexpected error:', err);
     return json(

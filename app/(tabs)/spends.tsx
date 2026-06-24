@@ -276,6 +276,14 @@ export default function SpendsTab() {
               Couldn&apos;t load Splitwise balances.
             </Text>
           </View>
+        ) : swBalances && !swBalances.connected ? (
+          <View className="bg-surface border border-border rounded-2xl p-6 items-center">
+            <Text className="text-3xl mb-2">🔗</Text>
+            <Text className="text-sm text-text-secondary text-center">
+              Connect Splitwise on the Profile tab to track what you owe and
+              import shared expenses.
+            </Text>
+          </View>
         ) : swBalances && swBalances.owe.length > 0 ? (
           <OwedBarChart
             items={swBalances.owe}
@@ -290,7 +298,9 @@ export default function SpendsTab() {
             </Text>
           </View>
         )}
-        <SplitwiseImportButton onImported={refetchTxs} />
+        {swBalances?.connected && (
+          <SplitwiseImportButton onImported={refetchTxs} />
+        )}
       </View>
 
       {loading ? (
