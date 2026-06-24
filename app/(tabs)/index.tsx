@@ -8,11 +8,11 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { AddTransactionCard } from '../../components/home/AddTransactionCard';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
 import { NetPositionCard } from '../../components/home/NetPositionCard';
 import { NudgeCard } from '../../components/home/NudgeCard';
 import { PersonalityCard } from '../../components/home/PersonalityCard';
+import { SmartBar } from '../../components/home/SmartBar';
 import { TransactionRow } from '../../components/home/TransactionRow';
 import { UploadStatementCard } from '../../components/home/UploadStatementCard';
 import { useNudges } from '../../hooks/useNudges';
@@ -92,6 +92,10 @@ export default function HomeTab() {
         </Text>
       </View>
 
+      <View className="px-6 mb-4">
+        <SmartBar onRecorded={refetchTxs} />
+      </View>
+
       {nudges.length > 0 && (
         <View className="px-6 mb-4 gap-3">
           {nudges.map((n) => (
@@ -129,7 +133,7 @@ export default function HomeTab() {
           <View className="bg-surface border border-border rounded-2xl p-6 items-center">
             <Text className="text-3xl mb-2">📭</Text>
             <Text className="text-text-secondary text-center text-sm">
-              No transactions yet. Add one below.
+              No transactions yet. Use the bar at the top to add one.
             </Text>
           </View>
         ) : (
@@ -189,7 +193,6 @@ export default function HomeTab() {
           Add transactions
         </Text>
         <View className="gap-3">
-          <AddTransactionCard onSuccess={refetchTxs} />
           <UploadStatementCard onSuccess={refetchTxs} />
         </View>
       </View>
