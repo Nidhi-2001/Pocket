@@ -204,7 +204,9 @@ Deno.serve(async (req) => {
       if (todays && todays.length > 0) {
         if (!isCron) {
           const active = todays.find((t: any) => !t.dismissed) ?? null;
-          return json({ insight: active });
+          // dismissedToday: an insight existed today but was dismissed — the
+          // client hides the card rather than showing the new-user placeholder.
+          return json({ insight: active, dismissedToday: active === null });
         }
         results.push({ user: userId, skipped: 'exists' });
         continue;

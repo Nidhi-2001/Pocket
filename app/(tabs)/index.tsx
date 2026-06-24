@@ -1,12 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { useCallback } from 'react';
+import { ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
 import { InsightCard } from '../../components/home/InsightCard';
@@ -26,12 +19,7 @@ export default function HomeTab() {
   const { profile } = useProfile();
   const { transactions, refetch: refetchTxs } = useTransactions({ limit: 10 });
   const { nudges, markRead, refetch: refetchNudges } = useNudges();
-  const { personality, refetch: refetchPersonality } = usePersonality();
-
-  const [generating, setGenerating] = useState<null | 'nudge' | 'personality'>(
-    null,
-  );
-  const [genError, setGenError] = useState<string | null>(null);
+  const { personality } = usePersonality();
 
   // Generate any due alerts (daily reminder, weekend summary, budget warning)
   // whenever Home gains focus — so changing the budget on Profile and coming
@@ -60,26 +48,6 @@ export default function HomeTab() {
     .reduce((sum, tx) => sum + tx.amount, 0);
 
   const recentFive = transactions.slice(0, 5);
-
-  async function generate(kind: 'nudge' | 'personality') {
-    setGenerating(kind);
-    setGenError(null);
-    const fn = kind === 'nudge' ? 'goal-nudge' : 'personality';
-    const { error: err } = await supabase.functions.invoke(fn, { body: {} });
-    setGenerating(null);
-    if (err) {
-      const ctx = (err as { context?: unknown }).context;
-      if (ctx instanceof Response) {
-        const body = await ctx.json().catch(() => null);
-        setGenError(body?.error ?? `HTTP ${ctx.status}`);
-      } else {
-        setGenError(err.message || String(err));
-      }
-      return;
-    }
-    if (kind === 'nudge') refetchNudges();
-    else refetchPersonality();
-  }
 
   return (
     <ScrollView className="flex-1 bg-background">
@@ -142,49 +110,6 @@ export default function HomeTab() {
               <TransactionRow key={tx.id} tx={tx} />
             ))}
           </View>
-        )}
-      </View>
-
-      <View className="px-6 mb-6">
-        <Text className="text-xs text-text-muted uppercase mb-2 font-semibold tracking-wider">
-          Pocket insights
-        </Text>
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={() => generate('nudge')}
-            disabled={generating !== null}
-            className="flex-1 flex-row items-center justify-center gap-2 bg-surface border border-border py-3 rounded-2xl active:opacity-80"
-          >
-            {generating === 'nudge' ? (
-              <ActivityIndicator size="small" />
-            ) : (
-              <>
-                <Ionicons name="bulb-outline" size={16} color="#4F46E5" />
-                <Text className="text-sm font-medium text-text-primary">
-                  New nudge
-                </Text>
-              </>
-            )}
-          </Pressable>
-          <Pressable
-            onPress={() => generate('personality')}
-            disabled={generating !== null}
-            className="flex-1 flex-row items-center justify-center gap-2 bg-surface border border-border py-3 rounded-2xl active:opacity-80"
-          >
-            {generating === 'personality' ? (
-              <ActivityIndicator size="small" />
-            ) : (
-              <>
-                <Ionicons name="sparkles-outline" size={16} color="#8B5CF6" />
-                <Text className="text-sm font-medium text-text-primary">
-                  Personality
-                </Text>
-              </>
-            )}
-          </Pressable>
-        </View>
-        {genError && (
-          <Text className="text-danger text-xs mt-2">{genError}</Text>
         )}
       </View>
 

@@ -6,6 +6,7 @@ import type { Insight } from '../types';
 interface UseInsightResult {
   insight: Insight | null;
   loading: boolean;
+  dismissedToday: boolean; // today's insight existed but was dismissed
   dismiss: () => Promise<void>;
 }
 
@@ -17,6 +18,7 @@ interface UseInsightResult {
  */
 export function useInsight(): UseInsightResult {
   const [insight, setInsight] = useState<Insight | null>(null);
+  const [dismissedToday, setDismissedToday] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -27,8 +29,11 @@ export function useInsight(): UseInsightResult {
     if (error) {
       console.error('useInsight error:', error);
       setInsight(null);
+      setDismissedToday(false);
     } else {
-      setInsight((data as { insight: Insight | null })?.insight ?? null);
+      const d = data as { insight: Insight | null; dismissedToday?: boolean };
+      setInsight(d?.insight ?? null);
+      setDismissedToday(!!d?.dismissedToday);
     }
     setLoading(false);
   }, []);
@@ -37,6 +42,7 @@ export function useInsight(): UseInsightResult {
     if (!insight) return;
     const id = insight.id;
     setInsight(null); // optimistic
+    setDismissedToday(true);
     await supabase.from('insights').update({ dismissed: true }).eq('id', id);
   }, [insight]);
 
@@ -46,5 +52,5 @@ export function useInsight(): UseInsightResult {
     }, [load]),
   );
 
-  return { insight, loading, dismiss };
+  return { insight, loading, dismissedToday, dismiss };
 }

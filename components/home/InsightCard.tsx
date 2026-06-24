@@ -12,7 +12,11 @@ const PURPLE = '#8B5CF6';
  */
 export function InsightCard() {
   const router = useRouter();
-  const { insight, loading, dismiss } = useInsight();
+  const { insight, loading, dismissedToday, dismiss } = useInsight();
+
+  // Dismissed today → respect it, hide the card entirely (don't fall back to
+  // the new-user placeholder).
+  if (!insight && dismissedToday) return null;
 
   if (loading && !insight) {
     return (
