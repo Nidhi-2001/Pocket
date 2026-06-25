@@ -165,10 +165,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Confirm the upload row belongs to the caller.
+    // Confirm the upload row belongs to the caller, and read the storage path
+    // FROM THE ROW — never trust the client-supplied path. (Otherwise a caller
+    // could pass their own uploadId with another user's storagePath and have
+    // that user's statement downloaded via the service-role client.)
     const { data: upload, error: upErr } = await admin
       .from('statement_uploads')
-      .select('id, user_id')
+      .select('id, user_id, storage_path')
       .eq('id', uploadId)
       .single();
     if (upErr || !upload) {
@@ -176,6 +179,10 @@ Deno.serve(async (req) => {
     }
     if (upload.user_id !== user.id) {
       return json({ error: 'Forbidden' }, 403);
+    }
+    const ownedPath = upload.storage_path as string | null;
+    if (!ownedPath) {
+      return json({ error: 'Upload row missing storage path' }, 400);
     }
 
     // Mark processing.
@@ -195,7 +202,7 @@ Deno.serve(async (req) => {
     // Download the PDF from Storage.
     const { data: pdfBlob, error: dlErr } = await admin.storage
       .from('statements')
-      .download(storagePath);
+      .download(ownedPath);
     if (dlErr || !pdfBlob) {
       await failUpload(admin, uploadId, dlErr?.message ?? 'download failed');
       return json({ error: 'Failed to download PDF', detail: dlErr?.message }, 500);
