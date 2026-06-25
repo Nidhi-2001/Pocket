@@ -10,7 +10,7 @@
 #      EXPO_PUBLIC_SPLITWISE_CLIENT_ID
 
 [build]
-  command = "npx expo export --platform web"
+  command = "npx expo export --platform web && node scripts/inject-meta.js"
   publish = "dist"
 
 [build.environment]

@@ -1,7 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { gradients, shadows } from '../../constants/theme';
+
+const PRIVACY_URL = 'https://github.com/Nidhi-2001/Pocket/blob/main/PRIVACY.md';
 
 export default function Welcome() {
   return (
@@ -59,7 +61,7 @@ export default function Welcome() {
         </View>
 
         <View>
-          <Link href="/sms-permission" asChild>
+          <Link href="/how-it-works" asChild>
             <Pressable
               className="bg-white py-4 rounded-2xl items-center active:opacity-90"
               style={shadows.md}
@@ -74,6 +76,12 @@ export default function Welcome() {
               </Text>
             </Pressable>
           </Link>
+          <Pressable
+            onPress={() => Linking.openURL(PRIVACY_URL)}
+            className="mt-2 py-1 items-center active:opacity-70"
+          >
+            <Text className="text-white/55 text-xs">Privacy policy</Text>
+          </Pressable>
         </View>
       </View>
     </LinearGradient>
