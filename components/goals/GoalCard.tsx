@@ -104,7 +104,7 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
           className="h-full rounded-full"
           style={{
             width: `${progress}%`,
-            backgroundColor: completed ? '#10B981' : '#2563EB',
+            backgroundColor: completed ? '#10B981' : '#64748B',
           }}
         />
       </View>

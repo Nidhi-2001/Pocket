@@ -152,7 +152,7 @@ export function UploadStatementCard({ onSuccess }: UploadStatementCardProps) {
   return (
     <GlassView className="rounded-3xl p-5" style={shadows.sm}>
       <View className="flex-row items-center gap-2 mb-2">
-        <Ionicons name="document-text-outline" size={18} color="#2563EB" />
+        <Ionicons name="document-text-outline" size={18} color="#64748B" />
         <Text className="text-sm font-bold text-text-primary">
           Upload a credit card statement
         </Text>

@@ -131,7 +131,7 @@ export default function ProfileTab() {
             onPress={startEdit}
             className="flex-row items-center gap-1 px-3 py-2 bg-surface border border-border rounded-xl active:opacity-80"
           >
-            <Ionicons name="pencil-outline" size={14} color="#2563EB" />
+            <Ionicons name="pencil-outline" size={14} color="#64748B" />
             <Text className="text-sm text-primary font-medium">Edit</Text>
           </Pressable>
         )}
@@ -280,7 +280,7 @@ function AppearanceCard() {
   return (
     <GlassView className="rounded-3xl p-5" style={shadows.sm}>
       <View className="flex-row items-center gap-2 mb-3">
-        <Ionicons name="contrast-outline" size={18} color="#2563EB" />
+        <Ionicons name="contrast-outline" size={18} color="#64748B" />
         <Text className="text-sm font-bold text-text-primary">Appearance</Text>
       </View>
       <View className="flex-row bg-surface-soft rounded-2xl p-1 gap-1">

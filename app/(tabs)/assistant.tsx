@@ -176,7 +176,7 @@ export default function AssistantTab() {
               <Ionicons
                 name={voice.recording ? 'stop' : 'mic-outline'}
                 size={20}
-                color={voice.recording ? '#FFFFFF' : '#2563EB'}
+                color={voice.recording ? '#FFFFFF' : '#64748B'}
               />
             )}
           </Pressable>

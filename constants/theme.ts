@@ -1,9 +1,9 @@
 export const colors = {
-  primary: '#2563EB',
-  primaryDark: '#1D4ED8',
-  primaryDeep: '#1E40AF',
-  primaryLight: '#EFF6FF',
-  accent: '#0EA5E9',
+  primary: '#334155',
+  primaryDark: '#1E293B',
+  primaryDeep: '#0F172A',
+  primaryLight: '#F1F5F9',
+  accent: '#64748B',
   success: '#10B981',
   successDark: '#059669',
   danger: '#EF4444',
@@ -25,7 +25,7 @@ export const colors = {
  */
 export const darkColors = {
   ...colors,
-  primaryLight: '#16223F',
+  primaryLight: '#1E293B',
   background: '#0B1020',
   surface: '#161D31',
   surfaceSoft: '#202840',
@@ -37,13 +37,13 @@ export const darkColors = {
 
 /** Reusable gradient stops (direction decided at the call site). */
 export const gradients = {
-  // Signature brand gradient — blue → navy. Professional, used on hero + FAB.
-  brand: ['#3B82F6', '#2563EB', '#1E40AF'] as const,
-  brandDeep: ['#1D4ED8', '#1E40AF', '#172554'] as const,
+  // Signature brand gradient — graphite slate. Minimal/monochrome, hero + FAB.
+  brand: ['#475569', '#334155', '#1E293B'] as const,
+  brandDeep: ['#334155', '#1E293B', '#0F172A'] as const,
   success: ['#10B981', '#34D399'] as const,
   danger: ['#EF4444', '#F87171'] as const,
   // Subtle light wash for soft cards.
-  wash: ['#F1F5F9', '#E9EEF6'] as const,
+  wash: ['#F1F5F9', '#E2E8F0'] as const,
 } as const;
 
 /**

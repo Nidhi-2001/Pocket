@@ -18,12 +18,12 @@ export function PersonalityCard({ personality }: PersonalityCardProps) {
 
   return (
     <LinearGradient
-      colors={['#1E293B', '#1E3A8A']}
+      colors={['#1E293B', '#0F172A']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[{ borderRadius: 28, padding: 20 }, shadows.md]}
     >
-      <Text className="text-xs uppercase tracking-widest font-bold mb-2" style={{ color: '#BFDBFE' }}>
+      <Text className="text-xs uppercase tracking-widest font-bold mb-2" style={{ color: '#CBD5E1' }}>
         Your {month} personality
       </Text>
       <View className="flex-row items-center gap-3 mb-4">
@@ -37,7 +37,7 @@ export function PersonalityCard({ personality }: PersonalityCardProps) {
         <View className="gap-2 mb-4">
           {insights.map((insight, i) => (
             <View key={i} className="flex-row gap-2">
-              <Text style={{ color: '#BFDBFE' }}>•</Text>
+              <Text style={{ color: '#CBD5E1' }}>•</Text>
               <Text className="text-sm flex-1 leading-relaxed" style={{ color: 'rgba(255,255,255,0.92)' }}>
                 {insight}
               </Text>
@@ -51,7 +51,7 @@ export function PersonalityCard({ personality }: PersonalityCardProps) {
           className="rounded-2xl p-3.5"
           style={{ backgroundColor: 'rgba(255,255,255,0.10)' }}
         >
-          <Text className="text-xs uppercase mb-1 tracking-widest font-bold" style={{ color: '#BFDBFE' }}>
+          <Text className="text-xs uppercase mb-1 tracking-widest font-bold" style={{ color: '#CBD5E1' }}>
             Try this
           </Text>
           {actions.map((a, i) => (

@@ -434,7 +434,7 @@ function ExpenseSection({
         <View className="px-6 mb-5 flex-row gap-2">
           <StatCard
             iconName="trending-up-outline"
-            iconColor="#2563EB"
+            iconColor="#64748B"
             label="Daily avg"
             value={formatCurrency(stats.dailyAvg, currency)}
             sub={`${stats.days} day${stats.days === 1 ? '' : 's'}`}

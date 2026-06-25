@@ -84,7 +84,7 @@ export function CategoryBudgetsCard() {
   return (
     <GlassView className="rounded-2xl p-5" style={shadows.sm}>
       <View className="flex-row items-center gap-2 mb-1">
-        <Ionicons name="wallet-outline" size={18} color="#2563EB" />
+        <Ionicons name="wallet-outline" size={18} color="#64748B" />
         <Text className="text-base font-semibold text-text-primary">
           Per-category budgets
         </Text>
@@ -135,7 +135,7 @@ export function CategoryBudgetsCard() {
                     className="flex-1 py-2 text-sm text-text-primary"
                   />
                   {busy === cat && (
-                    <ActivityIndicator size="small" color="#2563EB" />
+                    <ActivityIndicator size="small" color="#64748B" />
                   )}
                 </View>
                 {current > 0 && (

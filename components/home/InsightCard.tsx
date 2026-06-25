@@ -5,7 +5,7 @@ import { shadows } from '../../constants/theme';
 import { GlassView } from '../ui/GlassView';
 import { useInsight } from '../../hooks/useInsight';
 
-const PURPLE = '#2563EB';
+const PURPLE = '#64748B';
 
 /**
  * Proactive AI insight card on Home. Shows today's single LLM-generated,

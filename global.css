@@ -18,8 +18,8 @@
     --text-secondary: 100 116 139;
     --text-muted: 148 163 184;
     --border: 236 237 243;
-    --primary-light: 239 246 255;
-    --accent-light: 224 242 254;
+    --primary-light: 241 245 249;
+    --accent-light: 226 232 240;
   }
 
   .dark:root {
@@ -30,7 +30,7 @@
     --text-secondary: 148 163 184;
     --text-muted: 100 116 139;
     --border: 40 48 74;
-    --primary-light: 22 34 63;
-    --accent-light: 12 35 56;
+    --primary-light: 30 41 59;
+    --accent-light: 30 41 59;
   }
 }

@@ -53,8 +53,8 @@ export function SplitwiseImportButton({ onImported }: SplitwiseImportButtonProps
           <ActivityIndicator size="small" />
         ) : (
           <>
-            <Ionicons name="download-outline" size={16} color="#2563EB" />
-            <Text className="text-sm font-semibold" style={{ color: '#2563EB' }}>
+            <Ionicons name="download-outline" size={16} color="#64748B" />
+            <Text className="text-sm font-semibold" style={{ color: '#64748B' }}>
               Import expenses I paid
             </Text>
           </>

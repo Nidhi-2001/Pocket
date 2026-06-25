@@ -10,13 +10,13 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#2563EB',
-          dark: '#1D4ED8',
-          deep: '#1E40AF',
+          DEFAULT: '#334155',
+          dark: '#1E293B',
+          deep: '#0F172A',
           light: 'rgb(var(--primary-light) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: '#0EA5E9',
+          DEFAULT: '#64748B',
           light: 'rgb(var(--accent-light) / <alpha-value>)',
         },
         success: {

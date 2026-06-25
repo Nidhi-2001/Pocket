@@ -11,9 +11,9 @@ interface NudgeCardProps {
 
 const TYPE_META: Record<Nudge['type'], { emoji: string; tint: string }> = {
   budget_warning: { emoji: '⚠️', tint: '#EF4444' },
-  goal_check: { emoji: '🎯', tint: '#2563EB' },
+  goal_check: { emoji: '🎯', tint: '#64748B' },
   weekly_digest: { emoji: '📊', tint: '#10B981' },
-  personality: { emoji: '✨', tint: '#2563EB' },
+  personality: { emoji: '✨', tint: '#64748B' },
   daily_reminder: { emoji: '📝', tint: '#F59E0B' },
 };
 

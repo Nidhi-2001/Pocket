@@ -1,18 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { Pressable, View } from 'react-native';
-import { colors, gradients, shadows } from '../../constants/theme';
+import { gradients, shadows } from '../../constants/theme';
 import { GlassView } from '../../components/ui/GlassView';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 export default function TabsLayout() {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
+  // Monochrome: the active tab needs to be dark in light mode and light in dark
+  // mode so it actually stands out against the frosted bar.
+  const activeTint = colorScheme === 'dark' ? '#F1F5F9' : '#1E293B';
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: activeTint,
         tabBarInactiveTintColor: c.textMuted,
         // Floating frosted-glass bar — the screen's ScreenBackground shows
         // through it. Screens add bottom padding so content clears it.

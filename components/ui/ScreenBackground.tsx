@@ -19,10 +19,10 @@ export function ScreenBackground() {
   const dark = colorScheme === 'dark';
 
   const base = dark
-    ? (['#0A0F1E', '#0D1730', '#0A0F1E'] as const)
-    : (['#EEF3FB', '#E6EEF9', '#EFF4F9'] as const);
-  const orbA = dark ? 'rgba(37,99,235,0.45)' : 'rgba(37,99,235,0.30)';
-  const orbB = dark ? 'rgba(14,165,233,0.38)' : 'rgba(20,184,166,0.22)';
+    ? (['#0B1120', '#111827', '#0B1120'] as const)
+    : (['#F8FAFC', '#F1F5F9', '#E9EDF3'] as const);
+  const orbA = dark ? 'rgba(148,163,184,0.14)' : 'rgba(100,116,139,0.16)';
+  const orbB = dark ? 'rgba(100,116,139,0.16)' : 'rgba(148,163,184,0.14)';
   const blur = Platform.OS === 'web' ? orbBlur(70) : null;
 
   return (
