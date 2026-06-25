@@ -1,9 +1,10 @@
 // supabase/functions/transcribe/index.ts
 //
-// Speech-to-text via Groq Whisper. Receives base64 audio from the app, forwards
-// it to Groq's transcription endpoint (whisper-large-v3-turbo), returns { text }.
-// The GROQ_API_KEY stays server-side. The transcribed text is then fed into the
-// existing `assistant` flow by the client.
+// Speech-to-text via Groq Whisper. Receives base64 audio from the app and
+// forwards it to Groq's TRANSLATION endpoint (whisper-large-v3): speech in any
+// of ~99 languages → ENGLISH text, returned as { text }. The GROQ_API_KEY stays
+// server-side; the English text is then fed into the existing `assistant` flow.
+// (Translation requires whisper-large-v3 — the 'turbo' model is transcribe-only.)
 //
 // Request:  { audio: <base64 string>, mimeType?: string }
 // Response: { text: string }
@@ -71,11 +72,12 @@ Deno.serve(async (req) => {
 
     const form = new FormData();
     form.append('file', new Blob([bytes], { type: mimeType }), `audio.${extFor(mimeType)}`);
-    form.append('model', 'whisper-large-v3-turbo');
+    // Translation: any spoken language → English. Uses whisper-large-v3
+    // (turbo is transcribe-only and can't translate).
+    form.append('model', 'whisper-large-v3');
     form.append('response_format', 'json');
-    // form.append('language', 'en'); // omit → Whisper auto-detects the language
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/audio/translations', {
       method: 'POST',
       headers: { Authorization: `Bearer ${GROQ_API_KEY}` }, // fetch sets the multipart boundary
       body: form,
