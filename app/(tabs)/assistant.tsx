@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { supabase } from '../../lib/supabase';
 
 interface Msg {
@@ -35,6 +36,10 @@ export default function AssistantTab() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  // Voice input → drops the transcript into the box (review before send).
+  const voice = useVoiceInput((t) =>
+    setInput((prev) => (prev ? `${prev} ${t}` : t)),
+  );
 
   useEffect(() => {
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
@@ -135,6 +140,24 @@ export default function AssistantTab() {
           style={{ textAlignVertical: 'center', maxHeight: 96 }}
           className="flex-1 bg-background border border-border rounded-2xl px-4 py-2 text-sm text-text-primary"
         />
+        {voice.supported && (
+          <Pressable
+            onPress={voice.toggle}
+            disabled={voice.busy}
+            className="w-11 h-11 rounded-full items-center justify-center border border-border"
+            style={{ backgroundColor: voice.recording ? '#F43F5E' : '#FFFFFF' }}
+          >
+            {voice.busy ? (
+              <ActivityIndicator size="small" />
+            ) : (
+              <Ionicons
+                name={voice.recording ? 'stop' : 'mic-outline'}
+                size={20}
+                color={voice.recording ? '#FFFFFF' : '#4F46E5'}
+              />
+            )}
+          </Pressable>
+        )}
         <Pressable
           onPress={() => send(input)}
           disabled={sending || !input.trim()}
