@@ -169,6 +169,9 @@ npx expo start --web
   - **Code fallback** (existing/forgotten-password users): a "code instead"
     link does `signInWithOtp({ shouldCreateUser: false })`, verified as
     `type: 'email'`/`'magiclink'`.
+  - **Forgot password:** `resetPasswordForEmail` emails a recovery code →
+    `verifyOtp({ type: 'recovery' })` → `updateUser({ password })`. Needs the
+    **"Reset Password"** template to carry `{{ .Token }}` too.
 - Earlier we pivoted phone OTP → email because Supabase requires a paid SMS
   provider. **All of the above depend on email delivery** — set up real SMTP
   (see `PRE_DEPLOY.md`) or Gmail drops the codes.

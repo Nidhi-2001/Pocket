@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 
-type Mode = 'login' | 'signup';
-type Step = 'form' | 'code';
+type Mode = 'login' | 'signup' | 'reset';
+type Step = 'form' | 'code' | 'newpw';
 
 const MIN_PASSWORD = 8;
 
@@ -21,12 +21,14 @@ const MIN_PASSWORD = 8;
  *  - Sign up: email + password + confirm → supabase.auth.signUp → a 6-digit
  *    code is emailed (Confirm-signup template) → verifyOtp(type:'signup').
  *  - Log in: email + password → signInWithPassword. A "code instead" link
- *    falls back to passwordless OTP so existing/forgotten-password users still
- *    get in.
+ *    falls back to passwordless OTP so existing/forgotten-password users get in.
+ *  - Reset: "Forgot password?" → resetPasswordForEmail emails a recovery code →
+ *    verifyOtp(type:'recovery') → set a new password via updateUser.
  *
- * NOTE: signup verification + the code fallback both rely on email actually
- * being delivered — set up real SMTP (see PRE_DEPLOY.md) so Gmail doesn't drop
- * the code.
+ * NOTE: every emailed code (signup, login fallback, reset) relies on real email
+ * delivery — set up SMTP (see PRE_DEPLOY.md) so Gmail doesn't drop them. The
+ * "Reset Password" and "Confirm signup" Supabase templates must contain
+ * {{ .Token }} so the code appears in the email body.
  */
 export default function Auth() {
   const params = useLocalSearchParams<{ mode?: string }>();
@@ -125,17 +127,30 @@ export default function Auth() {
     setInfo('We emailed you a sign-in code.');
   }
 
+  async function sendResetCode() {
+    resetMessages();
+    if (!email.includes('@')) return setError('Enter your email first.');
+    setLoading(true);
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email);
+    setLoading(false);
+    if (err) return setError(err.message);
+    setCodeContext('reset');
+    setStep('code');
+    setInfo('We emailed you a password-reset code.');
+  }
+
   async function verifyCode() {
     resetMessages();
     if (code.length < 6) return setError('Enter the code from your email.');
     setLoading(true);
 
-    // Signup codes verify as 'signup'; passwordless login codes as
-    // 'email'/'magiclink'. Try the relevant types in order.
+    // Signup → 'signup'; reset → 'recovery'; passwordless login → 'email'/'magiclink'.
     const types =
       codeContext === 'signup'
         ? (['signup', 'email'] as const)
-        : (['email', 'magiclink'] as const);
+        : codeContext === 'reset'
+          ? (['recovery'] as const)
+          : (['email', 'magiclink'] as const);
     let result: Awaited<ReturnType<typeof supabase.auth.verifyOtp>> | null = null;
     for (const t of types) {
       result = await supabase.auth.verifyOtp({ email, token: code, type: t });
@@ -146,17 +161,38 @@ export default function Auth() {
     if (!result || result.error) {
       return setError(result?.error?.message || 'Verification failed.');
     }
+    // Reset: the recovery session is now active — collect a new password.
+    if (codeContext === 'reset') {
+      setPassword('');
+      setConfirm('');
+      setStep('newpw');
+      setInfo('Code verified — choose a new password.');
+      return;
+    }
+    goToNext();
+  }
+
+  async function updatePassword() {
+    resetMessages();
+    if (password.length < MIN_PASSWORD)
+      return setError(`Password must be at least ${MIN_PASSWORD} characters.`);
+    if (password !== confirm) return setError('Passwords don’t match.');
+    setLoading(true);
+    const { error: err } = await supabase.auth.updateUser({ password });
+    setLoading(false);
+    if (err) return setError(err.message);
     goToNext();
   }
 
   // ---- Code step ----------------------------------------------------------
   if (step === 'code') {
     const disabled = loading || code.length < 6;
+    const isReset = codeContext === 'reset';
     return (
       <View className="flex-1 bg-background px-6 py-16 justify-between">
         <View className="mt-12">
           <Text className="text-3xl font-extrabold text-text-primary mb-3 tracking-tight">
-            Verify your email
+            {isReset ? 'Reset your password' : 'Verify your email'}
           </Text>
           <Text className="text-base text-text-secondary mb-1">
             Enter the code we sent to
@@ -203,7 +239,7 @@ export default function Auth() {
             <ActivityIndicator color="white" />
           ) : (
             <Text className="text-white font-semibold text-lg">
-              Verify &amp; continue
+              {isReset ? 'Verify code' : 'Verify & continue'}
             </Text>
           )}
         </Pressable>
@@ -211,13 +247,88 @@ export default function Auth() {
     );
   }
 
-  // ---- Form step (login / signup) ----------------------------------------
+  // ---- New-password step (after reset code verified) ----------------------
+  if (step === 'newpw') {
+    const disabled = loading || password.length < MIN_PASSWORD || !confirm;
+    return (
+      <View className="flex-1 bg-background px-6 py-16 justify-between">
+        <View className="mt-12">
+          <Text className="text-3xl font-extrabold text-text-primary mb-3 tracking-tight">
+            Choose a new password
+          </Text>
+          <Text className="text-base text-text-secondary mb-8">
+            Pick something you’ll remember — at least {MIN_PASSWORD} characters.
+          </Text>
+
+          <View className="flex-row items-center bg-surface border border-border rounded-2xl px-4 mb-4">
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="New password"
+              placeholderTextColor="#9CA3AF"
+              secureTextEntry={!showPw}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+              className="flex-1 py-4 text-base text-text-primary"
+            />
+            <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={8} className="active:opacity-60">
+              <Ionicons
+                name={showPw ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color="#94A3B8"
+              />
+            </Pressable>
+          </View>
+          <TextInput
+            value={confirm}
+            onChangeText={setConfirm}
+            placeholder="Confirm new password"
+            placeholderTextColor="#9CA3AF"
+            secureTextEntry={!showPw}
+            autoCapitalize="none"
+            autoCorrect={false}
+            className="bg-surface border border-border rounded-2xl px-4 py-4 text-base text-text-primary"
+          />
+          {error && <Text className="text-danger mt-3 text-sm">{error}</Text>}
+        </View>
+
+        <Pressable
+          onPress={updatePassword}
+          disabled={disabled}
+          className={`py-4 rounded-2xl items-center ${
+            disabled ? 'bg-text-muted' : 'bg-primary active:opacity-80'
+          }`}
+        >
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text className="text-white font-semibold text-lg">Update password</Text>
+          )}
+        </Pressable>
+      </View>
+    );
+  }
+
+  // ---- Form step (login / signup / reset) ---------------------------------
   const isSignup = mode === 'signup';
-  const disabled =
+  const isReset = mode === 'reset';
+  const formDisabled =
     loading ||
     !email ||
-    !password ||
+    (!isReset && !password) ||
     (isSignup && (!confirm || password.length < MIN_PASSWORD));
+
+  const title = isReset
+    ? 'Reset your password'
+    : isSignup
+      ? 'Create your account'
+      : 'Welcome back';
+  const subtitle = isReset
+    ? 'Enter your email and we’ll send you a reset code.'
+    : isSignup
+      ? 'Sign up to start tracking your money.'
+      : 'Log in to pick up where you left off.';
 
   return (
     <View className="flex-1 bg-background">
@@ -225,38 +336,40 @@ export default function Auth() {
         contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 80, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Mode toggle */}
-        <View className="flex-row bg-surface-soft rounded-2xl p-1 gap-1 mb-8">
-          {(['login', 'signup'] as const).map((m) => {
-            const active = mode === m;
-            return (
-              <Pressable
-                key={m}
-                onPress={() => switchMode(m)}
-                className={`flex-1 py-2.5 rounded-xl items-center active:opacity-80 ${
-                  active ? 'bg-primary' : ''
-                }`}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    active ? 'text-white' : 'text-text-secondary'
+        {/* Mode toggle (hidden during reset) */}
+        {!isReset ? (
+          <View className="flex-row bg-surface-soft rounded-2xl p-1 gap-1 mb-8">
+            {(['login', 'signup'] as const).map((m) => {
+              const active = mode === m;
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() => switchMode(m)}
+                  className={`flex-1 py-2.5 rounded-xl items-center active:opacity-80 ${
+                    active ? 'bg-primary' : ''
                   }`}
                 >
-                  {m === 'login' ? 'Log in' : 'Sign up'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                  <Text
+                    className={`text-sm font-semibold ${
+                      active ? 'text-white' : 'text-text-secondary'
+                    }`}
+                  >
+                    {m === 'login' ? 'Log in' : 'Sign up'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <Pressable onPress={() => switchMode('login')} className="mb-8 self-start active:opacity-70">
+            <Text className="text-primary text-sm">← Back to log in</Text>
+          </Pressable>
+        )}
 
         <Text className="text-3xl font-extrabold text-text-primary mb-2 tracking-tight">
-          {isSignup ? 'Create your account' : 'Welcome back'}
+          {title}
         </Text>
-        <Text className="text-base text-text-secondary mb-8">
-          {isSignup
-            ? 'Sign up to start tracking your money.'
-            : 'Log in to pick up where you left off.'}
-        </Text>
+        <Text className="text-base text-text-secondary mb-8">{subtitle}</Text>
 
         <Text className="text-sm font-medium text-text-secondary mb-1.5">Email</Text>
         <TextInput
@@ -271,26 +384,30 @@ export default function Auth() {
           className="bg-surface border border-border rounded-2xl px-4 py-4 text-base text-text-primary mb-4"
         />
 
-        <Text className="text-sm font-medium text-text-secondary mb-1.5">Password</Text>
-        <View className="flex-row items-center bg-surface border border-border rounded-2xl px-4 mb-4">
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder={isSignup ? `At least ${MIN_PASSWORD} characters` : 'Your password'}
-            placeholderTextColor="#9CA3AF"
-            secureTextEntry={!showPw}
-            autoCapitalize="none"
-            autoCorrect={false}
-            className="flex-1 py-4 text-base text-text-primary"
-          />
-          <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={8} className="active:opacity-60">
-            <Ionicons
-              name={showPw ? 'eye-off-outline' : 'eye-outline'}
-              size={20}
-              color="#94A3B8"
-            />
-          </Pressable>
-        </View>
+        {!isReset && (
+          <>
+            <Text className="text-sm font-medium text-text-secondary mb-1.5">Password</Text>
+            <View className="flex-row items-center bg-surface border border-border rounded-2xl px-4 mb-4">
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder={isSignup ? `At least ${MIN_PASSWORD} characters` : 'Your password'}
+                placeholderTextColor="#9CA3AF"
+                secureTextEntry={!showPw}
+                autoCapitalize="none"
+                autoCorrect={false}
+                className="flex-1 py-4 text-base text-text-primary"
+              />
+              <Pressable onPress={() => setShowPw((s) => !s)} hitSlop={8} className="active:opacity-60">
+                <Ionicons
+                  name={showPw ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color="#94A3B8"
+                />
+              </Pressable>
+            </View>
+          </>
+        )}
 
         {isSignup && (
           <>
@@ -316,25 +433,30 @@ export default function Auth() {
         )}
 
         <Pressable
-          onPress={isSignup ? handleSignUp : handleLogin}
-          disabled={disabled}
+          onPress={isReset ? sendResetCode : isSignup ? handleSignUp : handleLogin}
+          disabled={formDisabled}
           className={`mt-6 py-4 rounded-2xl items-center ${
-            disabled ? 'bg-text-muted' : 'bg-primary active:opacity-80'
+            formDisabled ? 'bg-text-muted' : 'bg-primary active:opacity-80'
           }`}
         >
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text className="text-white font-semibold text-lg">
-              {isSignup ? 'Create account' : 'Log in'}
+              {isReset ? 'Send reset code' : isSignup ? 'Create account' : 'Log in'}
             </Text>
           )}
         </Pressable>
 
-        {!isSignup && (
-          <Pressable onPress={sendLoginCode} disabled={loading} className="mt-4 self-center">
-            <Text className="text-primary text-sm">Email me a sign-in code instead</Text>
-          </Pressable>
+        {mode === 'login' && (
+          <View className="mt-4 items-center gap-3">
+            <Pressable onPress={sendLoginCode} disabled={loading} className="active:opacity-80">
+              <Text className="text-primary text-sm">Email me a sign-in code instead</Text>
+            </Pressable>
+            <Pressable onPress={() => switchMode('reset')} className="active:opacity-80">
+              <Text className="text-text-secondary text-sm">Forgot password?</Text>
+            </Pressable>
+          </View>
         )}
       </ScrollView>
     </View>
