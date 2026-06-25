@@ -1,4 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Text, View } from 'react-native';
+import { gradients, shadows } from '../../constants/theme';
 import { useCurrency } from '../../hooks/useCurrency';
 import { formatCurrency } from '../../lib/formatters';
 
@@ -9,9 +11,8 @@ interface CashFlowCardProps {
 }
 
 /**
- * Big purple card at the top of Home. Shows month-to-date income +
- * expenses + net, with a progress bar showing what fraction of income
- * has been spent. Replaces the old spend-only hero.
+ * Gradient hero at the top of Home. Shows month-to-date income + expenses + net,
+ * with a progress bar for the fraction of income spent.
  */
 export function CashFlowCard({
   income,
@@ -24,65 +25,96 @@ export function CashFlowCard({
   const overspent = expenses > income && income > 0;
 
   return (
-    <View className="bg-primary rounded-3xl p-6">
-      <Text
-        style={{ color: '#EEF2FF' }}
-        className="text-xs uppercase tracking-wider font-semibold mb-4"
-      >
-        This month&apos;s cash flow
-      </Text>
-
-      <View className="flex-row mb-5">
-        <Metric label="Income" value={`+${formatCurrency(income, currency)}`} valueColor="white" />
-        <View
-          style={{
-            width: 1,
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            marginHorizontal: 8,
-          }}
-        />
-        <Metric
-          label="Expenses"
-          value={`-${formatCurrency(expenses, currency)}`}
-          valueColor="white"
-        />
-        <View
-          style={{
-            width: 1,
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            marginHorizontal: 8,
-          }}
-        />
-        <Metric
-          label="Net"
-          value={`${net >= 0 ? '+' : ''}${formatCurrency(net, currency)}`}
-          valueColor={net >= 0 ? 'white' : '#FCA5A5'}
-        />
-      </View>
-
+    <LinearGradient
+      colors={gradients.brand}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[{ borderRadius: 28, overflow: 'hidden' }, shadows.brand]}
+    >
+      {/* decorative orbs */}
       <View
-        className="h-2 rounded-full overflow-hidden mb-2"
-        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
-      >
-        <View
-          className="h-full rounded-full"
-          style={{
-            width: `${pctSpent}%`,
-            backgroundColor: overspent ? '#F43F5E' : '#FFFFFF',
-          }}
-        />
-      </View>
+        style={{
+          position: 'absolute',
+          top: -40,
+          right: -30,
+          width: 140,
+          height: 140,
+          borderRadius: 70,
+          backgroundColor: 'rgba(255,255,255,0.12)',
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          bottom: -50,
+          left: -20,
+          width: 120,
+          height: 120,
+          borderRadius: 60,
+          backgroundColor: 'rgba(255,255,255,0.08)',
+        }}
+      />
 
-      <Text style={{ color: '#EEF2FF' }} className="text-xs">
-        {income > 0
-          ? overspent
-            ? `Spent ${pctSpent.toFixed(0)}% of income — over by ${formatCurrency(expenses - income, currency)}`
-            : `Spent ${pctSpent.toFixed(0)}% of income · saving ${(100 - pctSpent).toFixed(0)}%`
-          : expectedIncome > 0
-            ? `Expected ${formatCurrency(expectedIncome, currency)} income this month`
-            : 'No income recorded yet — set your expected monthly income in Profile'}
-      </Text>
-    </View>
+      <View className="p-6">
+        <Text
+          style={{ color: '#E0E7FF' }}
+          className="text-xs uppercase tracking-widest font-bold mb-4"
+        >
+          This month&apos;s cash flow
+        </Text>
+
+        <View className="flex-row mb-5">
+          <Metric label="Income" value={`+${formatCurrency(income, currency)}`} valueColor="#FFFFFF" />
+          <Divider />
+          <Metric
+            label="Expenses"
+            value={`-${formatCurrency(expenses, currency)}`}
+            valueColor="#FFFFFF"
+          />
+          <Divider />
+          <Metric
+            label="Net"
+            value={`${net >= 0 ? '+' : ''}${formatCurrency(net, currency)}`}
+            valueColor={net >= 0 ? '#FFFFFF' : '#FECDD3'}
+          />
+        </View>
+
+        <View
+          className="h-2.5 rounded-full overflow-hidden mb-2.5"
+          style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}
+        >
+          <View
+            className="h-full rounded-full"
+            style={{
+              width: `${pctSpent}%`,
+              backgroundColor: overspent ? '#FECACA' : '#FFFFFF',
+            }}
+          />
+        </View>
+
+        <Text style={{ color: '#E0E7FF' }} className="text-xs font-medium">
+          {income > 0
+            ? overspent
+              ? `Spent ${pctSpent.toFixed(0)}% of income — over by ${formatCurrency(expenses - income, currency)}`
+              : `Spent ${pctSpent.toFixed(0)}% of income · saving ${(100 - pctSpent).toFixed(0)}%`
+            : expectedIncome > 0
+              ? `Expected ${formatCurrency(expectedIncome, currency)} income this month`
+              : 'No income recorded yet — set your expected monthly income in Profile'}
+        </Text>
+      </View>
+    </LinearGradient>
+  );
+}
+
+function Divider() {
+  return (
+    <View
+      style={{
+        width: 1,
+        backgroundColor: 'rgba(255,255,255,0.22)',
+        marginHorizontal: 10,
+      }}
+    />
   );
 }
 
@@ -95,11 +127,11 @@ interface MetricProps {
 function Metric({ label, value, valueColor }: MetricProps) {
   return (
     <View className="flex-1">
-      <Text style={{ color: '#C7D2FE' }} className="text-[11px] mb-1">
+      <Text style={{ color: '#C7D2FE' }} className="text-[11px] font-medium mb-1">
         {label}
       </Text>
       <Text
-        className="text-lg font-bold"
+        className="text-xl font-extrabold"
         style={{ color: valueColor }}
         numberOfLines={1}
       >

@@ -170,7 +170,7 @@ export default function SpendsTab() {
   return (
     <ScrollView className="flex-1 bg-background">
       <View className="px-6 pt-16 pb-3">
-        <Text className="text-3xl font-bold text-text-primary mb-1">Spends</Text>
+        <Text className="text-[32px] font-extrabold text-text-primary mb-1 tracking-tight">Spends</Text>
         <Text className="text-base text-text-secondary">{periodSubtitle}</Text>
       </View>
 

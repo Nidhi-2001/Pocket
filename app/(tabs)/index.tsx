@@ -1,6 +1,8 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { gradients, shadows } from '../../constants/theme';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
 import { InsightCard } from '../../components/home/InsightCard';
 import { NetPositionCard } from '../../components/home/NetPositionCard';
@@ -49,15 +51,31 @@ export default function HomeTab() {
 
   const recentFive = transactions.slice(0, 5);
 
+  const displayName = profile?.name ?? 'there';
+  const initial = displayName.trim().charAt(0).toUpperCase() || '👋';
+
   return (
     <ScrollView className="flex-1 bg-background">
-      <View className="px-6 pt-16 pb-4">
-        <Text className="text-base text-text-secondary mb-1">
-          Hey {profile?.name ?? 'there'} 👋
-        </Text>
-        <Text className="text-2xl font-bold text-text-primary">
-          Let&apos;s see where your money went.
-        </Text>
+      <View className="px-6 pt-16 pb-4 flex-row items-center justify-between">
+        <View className="flex-1 pr-3">
+          <Text className="text-sm text-text-secondary mb-1 font-medium">
+            Hey {displayName} 👋
+          </Text>
+          <Text className="text-[26px] leading-8 font-extrabold text-text-primary tracking-tight">
+            Where your money went
+          </Text>
+        </View>
+        <LinearGradient
+          colors={gradients.brand}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[
+            { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+            shadows.brand,
+          ]}
+        >
+          <Text className="text-white text-lg font-bold">{initial}</Text>
+        </LinearGradient>
       </View>
 
       <View className="px-6 mb-4">
@@ -90,18 +108,18 @@ export default function HomeTab() {
         </View>
       )}
 
-      <View className="px-6 mb-2 flex-row items-center justify-between">
-        <Text className="text-lg font-semibold text-text-primary">
+      <View className="px-6 mb-3 flex-row items-center justify-between">
+        <Text className="text-lg font-bold text-text-primary tracking-tight">
           Recent transactions
         </Text>
       </View>
 
       <View className="px-6 mb-6">
         {recentFive.length === 0 ? (
-          <View className="bg-surface border border-border rounded-2xl p-6 items-center">
-            <Text className="text-3xl mb-2">📭</Text>
+          <View className="bg-surface rounded-3xl p-7 items-center" style={shadows.sm}>
+            <Text className="text-4xl mb-2">📭</Text>
             <Text className="text-text-secondary text-center text-sm">
-              No transactions yet. Use the bar at the top to add one.
+              No transactions yet. Tap the ✨ button to add one.
             </Text>
           </View>
         ) : (
@@ -114,7 +132,7 @@ export default function HomeTab() {
       </View>
 
       <View className="px-6 pb-12">
-        <Text className="text-xs text-text-muted uppercase mb-2 font-semibold tracking-wider">
+        <Text className="text-xs text-text-muted uppercase mb-3 font-bold tracking-widest">
           Add transactions
         </Text>
         <View className="gap-3">

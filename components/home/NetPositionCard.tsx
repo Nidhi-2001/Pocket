@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { shadows } from '../../constants/theme';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useNetPosition } from '../../hooks/useNetPosition';
 import { formatCurrency } from '../../lib/formatters';
@@ -16,12 +17,12 @@ export function NetPositionCard() {
   const { netFlow, oweMinor, owedToMeMinor, netPosition } = useNetPosition();
 
   return (
-    <View className="bg-surface border border-border rounded-2xl p-5">
-      <Text className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-2">
+    <View className="bg-surface rounded-3xl p-5" style={shadows.sm}>
+      <Text className="text-xs text-text-muted uppercase tracking-widest font-bold mb-2">
         Net position
       </Text>
       <Text
-        className="text-3xl font-bold"
+        className="text-4xl font-extrabold"
         style={{ color: netPosition >= 0 ? GREEN : RED }}
       >
         {netPosition >= 0 ? '+' : ''}

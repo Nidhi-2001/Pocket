@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -8,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { gradients, shadows } from '../../constants/theme';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 import { supabase } from '../../lib/supabase';
 
@@ -78,11 +80,21 @@ export default function AssistantTab() {
 
   return (
     <View className="flex-1 bg-background">
-      <View className="px-6 pt-16 pb-3 border-b border-border bg-surface">
-        <Text className="text-2xl font-bold text-text-primary">Pocket Assistant</Text>
-        <Text className="text-xs text-text-muted mt-0.5">
-          Log a spend or income, or ask about your money
-        </Text>
+      <View className="px-6 pt-16 pb-4 bg-surface flex-row items-center gap-3" style={shadows.sm}>
+        <LinearGradient
+          colors={gradients.brand}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+        </LinearGradient>
+        <View className="flex-1">
+          <Text className="text-xl font-extrabold text-text-primary tracking-tight">Pocket Assistant</Text>
+          <Text className="text-xs text-text-muted mt-0.5">
+            Log a spend or income, or ask about your money
+          </Text>
+        </View>
       </View>
 
       <ScrollView
@@ -92,18 +104,29 @@ export default function AssistantTab() {
       >
         {messages.length === 0 ? (
           <View className="py-8">
-            <Text className="text-5xl text-center mb-4">✨</Text>
+            <LinearGradient
+              colors={gradients.brand}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[
+                { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16 },
+                shadows.brand,
+              ]}
+            >
+              <Ionicons name="sparkles" size={34} color="#FFFFFF" />
+            </LinearGradient>
             <Text className="text-base text-text-secondary text-center mb-6">
               Tell me what you spent or earned, or ask a question:
             </Text>
-            <View className="gap-2">
+            <View className="gap-2.5">
               {SUGGESTIONS.map((s) => (
                 <Pressable
                   key={s}
                   onPress={() => send(s)}
-                  className="bg-surface border border-border rounded-2xl px-4 py-3 active:opacity-80"
+                  className="bg-surface rounded-2xl px-4 py-3.5 active:opacity-70"
+                  style={shadows.sm}
                 >
-                  <Text className="text-sm text-text-primary">{s}</Text>
+                  <Text className="text-sm text-text-primary font-medium">{s}</Text>
                 </Pressable>
               ))}
             </View>
@@ -161,11 +184,19 @@ export default function AssistantTab() {
         <Pressable
           onPress={() => send(input)}
           disabled={sending || !input.trim()}
-          className={`w-11 h-11 rounded-full items-center justify-center ${
-            sending || !input.trim() ? 'bg-text-muted' : 'bg-primary active:opacity-80'
-          }`}
+          className="active:opacity-80"
         >
-          <Ionicons name="arrow-up" size={20} color="white" />
+          <LinearGradient
+            colors={sending || !input.trim() ? (['#CBD5E1', '#CBD5E1'] as const) : gradients.brand}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[
+              { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+              sending || !input.trim() ? undefined : shadows.brand,
+            ]}
+          >
+            <Ionicons name="arrow-up" size={20} color="white" />
+          </LinearGradient>
         </Pressable>
       </View>
     </View>

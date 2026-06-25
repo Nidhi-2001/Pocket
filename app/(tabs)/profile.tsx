@@ -11,6 +11,7 @@ import {
 import { CategoryBudgetsCard } from '../../components/profile/CategoryBudgetsCard';
 import { SplitwiseConnectCard } from '../../components/profile/SplitwiseConnectCard';
 import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
+import { shadows } from '../../constants/theme';
 import {
   type CurrencyCode,
   getCurrency,
@@ -119,7 +120,7 @@ export default function ProfileTab() {
   return (
     <ScrollView className="flex-1 bg-background">
       <View className="px-6 pt-16 pb-4 flex-row items-center justify-between">
-        <Text className="text-3xl font-bold text-text-primary">Profile</Text>
+        <Text className="text-[32px] font-extrabold text-text-primary tracking-tight">Profile</Text>
         {!editing && profile && (
           <Pressable
             onPress={startEdit}
@@ -206,58 +207,33 @@ export default function ProfileTab() {
             </View>
           </View>
         ) : (
-          <View className="gap-3">
-            <View className="bg-surface border border-border rounded-2xl p-5">
-              <Text className="text-xs text-text-muted uppercase mb-1">
-                Name
-              </Text>
-              <Text className="text-lg text-text-primary font-medium">
-                {profile?.name ?? '—'}
-              </Text>
-            </View>
-
-            <View className="bg-surface border border-border rounded-2xl p-5">
-              <Text className="text-xs text-text-muted uppercase mb-1">
-                Email
-              </Text>
-              <Text className="text-lg text-text-primary font-medium">
-                {email ?? '—'}
-              </Text>
-            </View>
-
-            <View className="bg-surface border border-border rounded-2xl p-5">
-              <Text className="text-xs text-text-muted uppercase mb-1">
-                Currency
-              </Text>
-              <Text className="text-lg text-text-primary font-medium">
-                {cur.symbol} {cur.code} — {cur.name}
-              </Text>
-            </View>
-
-            <View className="bg-surface border border-border rounded-2xl p-5">
-              <Text className="text-xs text-text-muted uppercase mb-1">
-                Monthly budget
-              </Text>
-              <Text className="text-lg text-text-primary font-medium">
-                {profile
+          <View className="bg-surface rounded-3xl px-5" style={shadows.sm}>
+            <InfoRow label="Name" value={profile?.name ?? '—'} />
+            <InfoRow label="Email" value={email ?? '—'} />
+            <InfoRow
+              label="Currency"
+              value={`${cur.symbol} ${cur.code} — ${cur.name}`}
+            />
+            <InfoRow
+              label="Monthly budget"
+              value={
+                profile
                   ? formatCurrency(profile.monthly_budget, profile.currency)
-                  : '—'}
-              </Text>
-            </View>
-
-            <View className="bg-surface border border-border rounded-2xl p-5">
-              <Text className="text-xs text-text-muted uppercase mb-1">
-                Expected monthly income
-              </Text>
-              <Text className="text-lg text-text-primary font-medium">
-                {profile && profile.expected_monthly_income > 0
+                  : '—'
+              }
+            />
+            <InfoRow
+              label="Expected monthly income"
+              value={
+                profile && profile.expected_monthly_income > 0
                   ? formatCurrency(
                       profile.expected_monthly_income,
                       profile.currency,
                     )
-                  : 'Not set'}
-              </Text>
-            </View>
+                  : 'Not set'
+              }
+              last
+            />
           </View>
         )}
       </View>
@@ -279,5 +255,26 @@ export default function ProfileTab() {
         </Pressable>
       </View>
     </ScrollView>
+  );
+}
+
+function InfoRow({
+  label,
+  value,
+  last = false,
+}: {
+  label: string;
+  value: string;
+  last?: boolean;
+}) {
+  return (
+    <View
+      className={`flex-row items-center justify-between py-4 ${last ? '' : 'border-b border-border'}`}
+    >
+      <Text className="text-sm text-text-secondary">{label}</Text>
+      <Text className="text-[15px] text-text-primary font-semibold flex-1 text-right ml-4" numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
   );
 }

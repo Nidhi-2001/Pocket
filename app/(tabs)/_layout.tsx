@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
 import { Pressable, View } from 'react-native';
-import { colors } from '../../constants/theme';
+import { colors, gradients, shadows } from '../../constants/theme';
 
 export default function TabsLayout() {
   return (
@@ -12,14 +13,19 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
+          borderTopWidth: 0,
+          height: 72,
+          paddingBottom: 12,
+          paddingTop: 10,
+          shadowColor: '#1E293B',
+          shadowOpacity: 0.08,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: -4 },
+          elevation: 12,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '500',
+          fontWeight: '600',
         },
       }}
     >
@@ -53,26 +59,26 @@ export default function TabsLayout() {
               accessibilityLabel="Assistant"
               style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-start' }}
             >
-              <View
-                style={{
-                  marginTop: -22,
-                  width: 58,
-                  height: 58,
-                  borderRadius: 29,
-                  backgroundColor: colors.primary,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderWidth: 4,
-                  borderColor: colors.background,
-                  shadowColor: colors.primary,
-                  shadowOpacity: 0.45,
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 4 },
-                  elevation: 8,
-                }}
+              <LinearGradient
+                colors={gradients.brand}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[
+                  {
+                    marginTop: -24,
+                    width: 60,
+                    height: 60,
+                    borderRadius: 30,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 4,
+                    borderColor: colors.surface,
+                  },
+                  shadows.brand,
+                ]}
               >
                 <Ionicons name="sparkles" size={26} color="#FFFFFF" />
-              </View>
+              </LinearGradient>
             </Pressable>
           ),
         }}

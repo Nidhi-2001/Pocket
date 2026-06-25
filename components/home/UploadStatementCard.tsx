@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { shadows } from '../../constants/theme';
 import { supabase } from '../../lib/supabase';
 
 interface UploadStatementCardProps {
@@ -148,10 +149,10 @@ export function UploadStatementCard({ onSuccess }: UploadStatementCardProps) {
   }
 
   return (
-    <View className="bg-surface border border-border rounded-2xl p-4">
+    <View className="bg-surface rounded-3xl p-5" style={shadows.sm}>
       <View className="flex-row items-center gap-2 mb-2">
-        <Ionicons name="document-text-outline" size={18} color="#4F46E5" />
-        <Text className="text-sm font-semibold text-text-primary">
+        <Ionicons name="document-text-outline" size={18} color="#6366F1" />
+        <Text className="text-sm font-bold text-text-primary">
           Upload a credit card statement
         </Text>
       </View>
@@ -190,7 +191,7 @@ export function UploadStatementCard({ onSuccess }: UploadStatementCardProps) {
       </Pressable>
 
       {result && (
-        <View className="mt-3 px-3 py-2 bg-background rounded-xl border border-border">
+        <View className="mt-3 px-3 py-2.5 bg-surface-soft rounded-xl">
           <Text className="text-sm text-success font-semibold">
             ✓ Imported {result.inserted} transaction
             {result.inserted !== 1 ? 's' : ''}

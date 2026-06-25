@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { shadows } from '../../constants/theme';
 import { getCurrency, majorToMinor } from '../../lib/currency';
 import { formatCurrency, formatDateOnly } from '../../lib/formatters';
 import { supabase } from '../../lib/supabase';
@@ -70,7 +71,7 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
   }
 
   return (
-    <View className="bg-surface border border-border rounded-2xl p-5">
+    <View className="bg-surface rounded-3xl p-5" style={shadows.sm}>
       <View className="flex-row items-start justify-between mb-3">
         <View className="flex-row items-center gap-3 flex-1 mr-2">
           <Text className="text-3xl">{goal.emoji}</Text>
@@ -97,12 +98,12 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
         of {formatCurrency(goal.target_amount, currency)} ({progress.toFixed(0)}%)
       </Text>
 
-      <View className="h-2 bg-background border border-border rounded-full overflow-hidden mb-3">
+      <View className="h-2.5 bg-surface-soft rounded-full overflow-hidden mb-3">
         <View
-          className="h-full"
+          className="h-full rounded-full"
           style={{
             width: `${progress}%`,
-            backgroundColor: completed ? '#10B981' : '#4F46E5',
+            backgroundColor: completed ? '#10B981' : '#6366F1',
           }}
         />
       </View>

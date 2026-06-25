@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { GoalCard } from '../../components/goals/GoalCard';
 import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
+import { shadows } from '../../constants/theme';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useGoals } from '../../hooks/useGoals';
 import { type CurrencyCode, getCurrency, majorToMinor } from '../../lib/currency';
@@ -75,7 +76,7 @@ export default function GoalsTab() {
     <ScrollView className="flex-1 bg-background">
       <View className="px-6 pt-16 pb-4 flex-row items-start justify-between">
         <View className="flex-1">
-          <Text className="text-3xl font-bold text-text-primary mb-1">
+          <Text className="text-[32px] font-extrabold text-text-primary mb-1 tracking-tight">
             Goals
           </Text>
           <Text className="text-base text-text-secondary">
@@ -85,6 +86,7 @@ export default function GoalsTab() {
         <Pressable
           onPress={() => (showNew ? reset() : setShowNew(true))}
           className="w-12 h-12 rounded-full bg-primary items-center justify-center active:opacity-80"
+          style={shadows.brand}
         >
           <Ionicons name={showNew ? 'close' : 'add'} size={24} color="white" />
         </Pressable>

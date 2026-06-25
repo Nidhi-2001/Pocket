@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { shadows } from '../../constants/theme';
 import { useInsight } from '../../hooks/useInsight';
 
 const PURPLE = '#8B5CF6';
@@ -20,8 +21,8 @@ export function InsightCard() {
 
   if (loading && !insight) {
     return (
-      <View className="bg-surface border border-border rounded-2xl p-4 flex-row items-center gap-3">
-        <Ionicons name="sparkles" size={18} color={PURPLE} />
+      <View className="bg-surface rounded-3xl p-4 flex-row items-center gap-3" style={shadows.sm}>
+        <IconChip />
         <Text className="text-sm text-text-muted flex-1">Looking at your money…</Text>
         <ActivityIndicator size="small" />
       </View>
@@ -30,9 +31,9 @@ export function InsightCard() {
 
   if (!insight) {
     return (
-      <View className="bg-surface border border-border rounded-2xl p-4 flex-row items-start gap-3">
-        <Ionicons name="sparkles-outline" size={18} color={PURPLE} />
-        <Text className="flex-1 text-sm text-text-secondary leading-relaxed">
+      <View className="bg-surface rounded-3xl p-4 flex-row items-start gap-3" style={shadows.sm}>
+        <IconChip outline />
+        <Text className="flex-1 text-sm text-text-secondary leading-relaxed pt-1">
           Log a few more transactions and I&apos;ll start surfacing insights about
           your money here.
         </Text>
@@ -44,38 +45,49 @@ export function InsightCard() {
 
   return (
     <View
-      className="rounded-2xl p-4 border"
-      style={{ backgroundColor: PURPLE + '10', borderColor: PURPLE + '33' }}
+      className="rounded-3xl p-4"
+      style={[{ backgroundColor: PURPLE + '14' }, shadows.sm]}
     >
       <View className="flex-row items-start gap-3">
-        <Ionicons name="sparkles" size={18} color={PURPLE} />
+        <IconChip />
         <View className="flex-1">
           <View className="flex-row items-center justify-between mb-1">
             <Text
-              className="text-[11px] uppercase font-semibold tracking-wider"
+              className="text-[11px] uppercase font-bold tracking-widest"
               style={{ color: PURPLE }}
             >
               Insight · today
             </Text>
             <Pressable onPress={dismiss} hitSlop={8} className="active:opacity-60">
-              <Ionicons name="close" size={16} color="#9CA3AF" />
+              <Ionicons name="close" size={16} color="#94A3B8" />
             </Pressable>
           </View>
           <Pressable
             onPress={tappable ? () => router.push('/spends') : undefined}
             disabled={!tappable}
           >
-            <Text className="text-sm text-text-primary leading-relaxed">
+            <Text className="text-[15px] text-text-primary leading-relaxed font-medium">
               {insight.insight_text}
             </Text>
             {tappable && (
-              <Text className="text-xs mt-1.5 font-medium" style={{ color: PURPLE }}>
+              <Text className="text-xs mt-2 font-bold" style={{ color: PURPLE }}>
                 View {insight.related_category} →
               </Text>
             )}
           </Pressable>
         </View>
       </View>
+    </View>
+  );
+}
+
+function IconChip({ outline = false }: { outline?: boolean }) {
+  return (
+    <View
+      className="w-8 h-8 rounded-xl items-center justify-center"
+      style={{ backgroundColor: PURPLE + '1F' }}
+    >
+      <Ionicons name={outline ? 'sparkles-outline' : 'sparkles'} size={16} color={PURPLE} />
     </View>
   );
 }

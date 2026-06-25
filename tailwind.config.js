@@ -10,19 +10,36 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#4F46E5',
+          DEFAULT: '#6366F1',
+          dark: '#4F46E5',
+          deep: '#4338CA',
           light: '#EEF2FF',
         },
-        success: '#10B981',
-        danger: '#F43F5E',
-        background: '#F9FAFB',
-        surface: '#FFFFFF',
-        text: {
-          primary: '#111827',
-          secondary: '#6B7280',
-          muted: '#9CA3AF',
+        accent: {
+          DEFAULT: '#8B5CF6',
+          light: '#F3EEFF',
         },
-        border: '#E5E7EB',
+        success: {
+          DEFAULT: '#10B981',
+          dark: '#059669',
+        },
+        danger: {
+          DEFAULT: '#F43F5E',
+          dark: '#E11D48',
+        },
+        warning: '#F59E0B',
+        background: '#F5F6FB',
+        surface: '#FFFFFF',
+        'surface-soft': '#F1F2F9',
+        text: {
+          primary: '#0F172A',
+          secondary: '#64748B',
+          muted: '#94A3B8',
+        },
+        border: '#ECEDF3',
+      },
+      borderRadius: {
+        '4xl': '28px',
       },
     },
   },
