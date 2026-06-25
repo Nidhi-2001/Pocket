@@ -51,7 +51,7 @@ export default function SmsPermission() {
       </ScrollView>
 
       <View className="px-6 pb-10 pt-2 bg-background">
-        <Link href="/otp" asChild>
+        <Link href="/auth" asChild>
           <Pressable className="bg-primary py-4 rounded-2xl items-center active:opacity-80">
             <Text className="text-white font-semibold text-lg">Continue</Text>
           </Pressable>

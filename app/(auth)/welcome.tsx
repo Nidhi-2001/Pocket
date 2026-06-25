@@ -58,14 +58,23 @@ export default function Welcome() {
           </Text>
         </View>
 
-        <Link href="/sms-permission" asChild>
-          <Pressable
-            className="bg-white py-4 rounded-2xl items-center active:opacity-90"
-            style={shadows.md}
-          >
-            <Text className="text-primary-dark font-bold text-lg">Get started</Text>
-          </Pressable>
-        </Link>
+        <View>
+          <Link href="/sms-permission" asChild>
+            <Pressable
+              className="bg-white py-4 rounded-2xl items-center active:opacity-90"
+              style={shadows.md}
+            >
+              <Text className="text-primary-dark font-bold text-lg">Get started</Text>
+            </Pressable>
+          </Link>
+          <Link href="/auth?mode=login" asChild>
+            <Pressable className="mt-4 py-2 items-center active:opacity-80">
+              <Text className="text-white/90 font-medium text-base">
+                I already have an account · Log in
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
       </View>
     </LinearGradient>
   );

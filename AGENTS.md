@@ -158,17 +158,28 @@ npx expo start --web
 **Don't waste time re-diagnosing.** Long-term fix: downgrade NativeWind to
 4.1.x or wait for 4.3+. Tracked as TODO.
 
-### 2. Supabase email OTP
+### 2. Supabase auth (email + password, with email OTP)
 
-- We pivoted from **phone OTP → email OTP** because Supabase now requires a
-  paid SMS provider. The code in `app/(auth)/otp.tsx` uses
-  `supabase.auth.signInWithOtp({ email })` then `verifyOtp({ email, token, type: 'email' })`,
-  falling back to `type: 'signup'` for first-time users.
+- Auth lives in `app/(auth)/auth.tsx` (a combined screen; `?mode=login`
+  selects login). Flows:
+  - **Sign up:** email + password + confirm → `supabase.auth.signUp({ email,
+    password })` → a 6-digit code is emailed (Confirm-signup template) →
+    `verifyOtp({ email, token, type: 'signup' })`.
+  - **Log in:** `supabase.auth.signInWithPassword({ email, password })`.
+  - **Code fallback** (existing/forgotten-password users): a "code instead"
+    link does `signInWithOtp({ shouldCreateUser: false })`, verified as
+    `type: 'email'`/`'magiclink'`.
+- Earlier we pivoted phone OTP → email because Supabase requires a paid SMS
+  provider. **All of the above depend on email delivery** — set up real SMTP
+  (see `PRE_DEPLOY.md`) or Gmail drops the codes.
 - The OTP length is **project-configurable** in Supabase (default 6, ours is 8).
-  The screen's input accepts 6-10 digits.
+  The code input accepts 6-10 digits.
 - Both `Magic Link` AND `Confirm signup` email templates need `{{ .Token }}` in
-  their body — Supabase uses different templates for new vs returning users.
+  their body — Supabase uses different templates for the code vs signup paths.
   See [docs](https://supabase.com/docs/guides/auth/auth-email-templates).
+- **Email confirmations must stay ON** in Supabase Auth or signup returns a
+  session immediately and skips verification (the code handles both, but the
+  product expects the code step).
 
 ### 3. Auth guard race condition
 
