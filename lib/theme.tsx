@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colorScheme, useColorScheme } from 'nativewind';
+import { colorScheme } from 'nativewind';
 import {
   createContext,
   useContext,
@@ -30,31 +30,44 @@ const ThemeContext = createContext<ThemeContextValue>({
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [pref, setPrefState] = useState<ThemePref>('system');
-  // Resolved scheme ('light' | 'dark'), following the OS when pref is 'system'.
-  const { colorScheme: resolved } = useColorScheme();
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((v) => {
-      if (v === 'light' || v === 'dark' || v === 'system') {
-        setPrefState(v);
-        colorScheme.set(v);
-      }
+      if (v === 'light' || v === 'dark' || v === 'system') setPrefState(v);
     });
   }, []);
 
-  // On web, NativeWind doesn't toggle the root `dark` class for us, so the
-  // `.dark:root` CSS variables in global.css never apply. Drive it from the
-  // resolved scheme. (Native applies the variables through NativeWind's runtime.)
+  // Resolve the preference to an explicit light/dark scheme (following the OS
+  // when 'system'), then push that into NativeWind and — on web — toggle the
+  // root `dark` class so the `.dark:root` CSS variables apply.
+  //
+  // We always hand NativeWind an explicit 'light'/'dark' (never 'system'):
+  // in 'system' mode NativeWind strips the web `dark` class (it expects a
+  // prefers-color-scheme media query to drive `dark:` variants), which left our
+  // CSS-variable theme out of sync. Resolving here keeps the class stable and
+  // works the same on native (NativeWind applies `.dark:root` vars for the
+  // explicit scheme).
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
-    const root = document.documentElement;
-    if (resolved === 'dark') root.classList.add('dark');
-    else root.classList.remove('dark');
-  }, [resolved]);
+    const mq =
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? window.matchMedia?.('(prefers-color-scheme: dark)')
+        : null;
+    const apply = () => {
+      const dark = pref === 'dark' || (pref === 'system' && !!mq?.matches);
+      colorScheme.set(dark ? 'dark' : 'light');
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.documentElement.classList.toggle('dark', dark);
+      }
+    };
+    apply();
+    if (pref === 'system' && mq) {
+      mq.addEventListener('change', apply);
+      return () => mq.removeEventListener('change', apply);
+    }
+  }, [pref]);
 
   function setPref(p: ThemePref) {
     setPrefState(p);
-    colorScheme.set(p);
     AsyncStorage.setItem(STORAGE_KEY, p).catch(() => {});
   }
 
