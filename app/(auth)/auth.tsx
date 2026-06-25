@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -45,6 +45,14 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0); // seconds until "Resend code" re-enables
+
+  // Tick the resend cooldown down to zero.
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const id = setTimeout(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(id);
+  }, [resendIn]);
 
   function resetMessages() {
     setError(null);
@@ -94,6 +102,7 @@ export default function Auth() {
     if (data.session) return goToNext();
     setCodeContext('signup');
     setStep('code');
+    setResendIn(15);
     setInfo('We emailed you a 6-digit verification code.');
   }
 
@@ -124,6 +133,7 @@ export default function Auth() {
     if (err) return setError(err.message);
     setCodeContext('login');
     setStep('code');
+    setResendIn(15);
     setInfo('We emailed you a sign-in code.');
   }
 
@@ -136,7 +146,27 @@ export default function Auth() {
     if (err) return setError(err.message);
     setCodeContext('reset');
     setStep('code');
+    setResendIn(15);
     setInfo('We emailed you a password-reset code.');
+  }
+
+  async function resendCode() {
+    if (loading || resendIn > 0) return;
+    resetMessages();
+    setLoading(true);
+    const res =
+      codeContext === 'signup'
+        ? await supabase.auth.resend({ type: 'signup', email })
+        : codeContext === 'reset'
+          ? await supabase.auth.resetPasswordForEmail(email)
+          : await supabase.auth.signInWithOtp({
+              email,
+              options: { shouldCreateUser: false },
+            });
+    setLoading(false);
+    if (res.error) return setError(res.error.message);
+    setResendIn(15);
+    setInfo('Code re-sent — check your email (and spam).');
   }
 
   async function verifyCode() {
@@ -216,16 +246,29 @@ export default function Auth() {
             <Text className="text-text-secondary mt-3 text-sm">{info}</Text>
           )}
 
-          <Pressable
-            onPress={() => {
-              setStep('form');
-              setCode('');
-              resetMessages();
-            }}
-            className="mt-4 self-center"
-          >
-            <Text className="text-primary text-sm">Use a different email</Text>
-          </Pressable>
+          <View className="mt-5 items-center gap-3">
+            <Pressable
+              onPress={resendCode}
+              disabled={loading || resendIn > 0}
+              className="active:opacity-70"
+            >
+              <Text
+                className={`text-sm font-medium ${resendIn > 0 ? 'text-text-muted' : 'text-primary'}`}
+              >
+                {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setStep('form');
+                setCode('');
+                resetMessages();
+              }}
+              className="active:opacity-70"
+            >
+              <Text className="text-text-secondary text-sm">Use a different email</Text>
+            </Pressable>
+          </View>
         </View>
 
         <Pressable
