@@ -17,6 +17,24 @@ export const colors = {
   border: '#ECEDF3',
 } as const;
 
+/**
+ * Dark-mode equivalents for code that sets colors via inline `style` (e.g. the
+ * tab bar, navigator background) and can't use the CSS-variable className
+ * tokens. Keep these in sync with the `.dark:root` block in global.css.
+ * Brand/accent/success/danger are identical in both themes.
+ */
+export const darkColors = {
+  ...colors,
+  primaryLight: '#1E2547',
+  background: '#0B1020',
+  surface: '#161D31',
+  surfaceSoft: '#202840',
+  textPrimary: '#F1F5F9',
+  textSecondary: '#94A3B8',
+  textMuted: '#64748B',
+  border: '#28304A',
+} as const;
+
 /** Reusable gradient stops (direction decided at the call site). */
 export const gradients = {
   // Signature brand gradient — indigo → violet. Used on the hero + FAB.

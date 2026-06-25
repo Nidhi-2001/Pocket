@@ -20,6 +20,7 @@ import {
 } from '../../lib/currency';
 import { formatCurrency } from '../../lib/formatters';
 import { supabase } from '../../lib/supabase';
+import { type ThemePref, useThemePref } from '../../lib/theme';
 
 interface ProfileRow {
   name: string;
@@ -240,6 +241,7 @@ export default function ProfileTab() {
 
       {!editing && (
         <View className="px-6 mb-3 gap-3">
+          <AppearanceCard />
           <CategoryBudgetsCard />
           <SplitwiseConnectCard />
         </View>
@@ -255,6 +257,55 @@ export default function ProfileTab() {
         </Pressable>
       </View>
     </ScrollView>
+  );
+}
+
+const APPEARANCE_OPTIONS: {
+  pref: ThemePref;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { pref: 'system', label: 'System', icon: 'phone-portrait-outline' },
+  { pref: 'light', label: 'Light', icon: 'sunny-outline' },
+  { pref: 'dark', label: 'Dark', icon: 'moon-outline' },
+];
+
+function AppearanceCard() {
+  const { pref, setPref } = useThemePref();
+  return (
+    <View className="bg-surface rounded-3xl p-5" style={shadows.sm}>
+      <View className="flex-row items-center gap-2 mb-3">
+        <Ionicons name="contrast-outline" size={18} color="#6366F1" />
+        <Text className="text-sm font-bold text-text-primary">Appearance</Text>
+      </View>
+      <View className="flex-row bg-surface-soft rounded-2xl p-1 gap-1">
+        {APPEARANCE_OPTIONS.map((opt) => {
+          const active = pref === opt.pref;
+          return (
+            <Pressable
+              key={opt.pref}
+              onPress={() => setPref(opt.pref)}
+              className={`flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl active:opacity-80 ${
+                active ? 'bg-primary' : ''
+              }`}
+            >
+              <Ionicons
+                name={opt.icon}
+                size={15}
+                color={active ? '#FFFFFF' : '#94A3B8'}
+              />
+              <Text
+                className={`text-sm font-semibold ${
+                  active ? 'text-white' : 'text-text-secondary'
+                }`}
+              >
+                {opt.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 

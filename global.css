@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Semantic color tokens as CSS variables (space-separated RGB channels so
+ * Tailwind's <alpha-value> works). Toggling the `dark` class — done by
+ * NativeWind's colorScheme.set() — re-themes the whole app at once, so screens
+ * don't need per-element `dark:` variants. Brand/accent/success/danger stay
+ * fixed (they read well on both themes).
+ */
+@layer base {
+  :root {
+    --background: 245 246 251;
+    --surface: 255 255 255;
+    --surface-soft: 241 242 249;
+    --text-primary: 15 23 42;
+    --text-secondary: 100 116 139;
+    --text-muted: 148 163 184;
+    --border: 236 237 243;
+    --primary-light: 238 242 255;
+    --accent-light: 243 238 255;
+  }
+
+  .dark:root {
+    --background: 11 16 32;
+    --surface: 22 29 49;
+    --surface-soft: 32 40 64;
+    --text-primary: 241 245 249;
+    --text-secondary: 148 163 184;
+    --text-muted: 100 116 139;
+    --border: 40 48 74;
+    --primary-light: 30 37 71;
+    --accent-light: 39 30 71;
+  }
+}

@@ -4,9 +4,11 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { CurrencyContext } from '../hooks/useCurrency';
 import { useProfile } from '../hooks/useProfile';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { DEFAULT_CURRENCY } from '../lib/currency';
 import { registerForPushNotifications, scheduleDailyReminder } from '../lib/push';
 import { supabase } from '../lib/supabase';
+import { ThemeProvider } from '../lib/theme';
 
 export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -46,9 +48,18 @@ export default function RootLayout() {
     }
   }, [session]);
 
+  const c = useThemeColors();
+
   return (
-    <CurrencyContext.Provider value={profile?.currency ?? DEFAULT_CURRENCY}>
-      <Stack screenOptions={{ headerShown: false }} />
-    </CurrencyContext.Provider>
+    <ThemeProvider>
+      <CurrencyContext.Provider value={profile?.currency ?? DEFAULT_CURRENCY}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: c.background },
+          }}
+        />
+      </CurrencyContext.Provider>
+    </ThemeProvider>
   );
 }

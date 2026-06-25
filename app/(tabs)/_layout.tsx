@@ -3,22 +3,24 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { colors, gradients, shadows } from '../../constants/theme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 export default function TabsLayout() {
+  const c = useThemeColors();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: c.textMuted,
         tabBarStyle: {
-          backgroundColor: colors.surface,
+          backgroundColor: c.surface,
           borderTopWidth: 0,
           height: 72,
           paddingBottom: 12,
           paddingTop: 10,
-          shadowColor: '#1E293B',
-          shadowOpacity: 0.08,
+          shadowColor: '#000000',
+          shadowOpacity: 0.1,
           shadowRadius: 16,
           shadowOffset: { width: 0, height: -4 },
           elevation: 12,
@@ -72,7 +74,7 @@ export default function TabsLayout() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderWidth: 4,
-                    borderColor: colors.surface,
+                    borderColor: c.surface,
                   },
                   shadows.brand,
                 ]}
