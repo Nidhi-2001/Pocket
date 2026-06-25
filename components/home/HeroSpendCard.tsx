@@ -37,7 +37,7 @@ export function HeroSpendCard({ spent, budget }: HeroSpendCardProps) {
           className="h-full rounded-full"
           style={{
             width: `${pct}%`,
-            backgroundColor: overBudget ? '#F43F5E' : '#FFFFFF',
+            backgroundColor: overBudget ? '#EF4444' : '#FFFFFF',
           }}
         />
       </View>

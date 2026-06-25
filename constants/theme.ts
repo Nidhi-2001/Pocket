@@ -1,12 +1,12 @@
 export const colors = {
-  primary: '#6366F1',
-  primaryDark: '#4F46E5',
-  primaryDeep: '#4338CA',
-  primaryLight: '#EEF2FF',
-  accent: '#8B5CF6',
+  primary: '#2563EB',
+  primaryDark: '#1D4ED8',
+  primaryDeep: '#1E40AF',
+  primaryLight: '#EFF6FF',
+  accent: '#0EA5E9',
   success: '#10B981',
   successDark: '#059669',
-  danger: '#F43F5E',
+  danger: '#EF4444',
   warning: '#F59E0B',
   background: '#F5F6FB',
   surface: '#FFFFFF',
@@ -25,7 +25,7 @@ export const colors = {
  */
 export const darkColors = {
   ...colors,
-  primaryLight: '#1E2547',
+  primaryLight: '#16223F',
   background: '#0B1020',
   surface: '#161D31',
   surfaceSoft: '#202840',
@@ -37,13 +37,13 @@ export const darkColors = {
 
 /** Reusable gradient stops (direction decided at the call site). */
 export const gradients = {
-  // Signature brand gradient — indigo → violet. Used on the hero + FAB.
-  brand: ['#6366F1', '#7C6FF2', '#8B5CF6'] as const,
-  brandDeep: ['#4F46E5', '#6D5DF0', '#8B5CF6'] as const,
+  // Signature brand gradient — blue → navy. Professional, used on hero + FAB.
+  brand: ['#3B82F6', '#2563EB', '#1E40AF'] as const,
+  brandDeep: ['#1D4ED8', '#1E40AF', '#172554'] as const,
   success: ['#10B981', '#34D399'] as const,
-  danger: ['#F43F5E', '#FB7185'] as const,
+  danger: ['#EF4444', '#F87171'] as const,
   // Subtle light wash for soft cards.
-  wash: ['#F5F6FB', '#EEF1FB'] as const,
+  wash: ['#F1F5F9', '#E9EEF6'] as const,
 } as const;
 
 /**
@@ -78,8 +78,8 @@ export const shadows = {
 export const categories = {
   Food: { emoji: '🍕', color: '#F59E0B' },
   Transport: { emoji: '🚗', color: '#3B82F6' },
-  Shopping: { emoji: '🛍️', color: '#8B5CF6' },
-  Entertainment: { emoji: '🎬', color: '#EC4899' },
+  Shopping: { emoji: '🛍️', color: '#14B8A6' },
+  Entertainment: { emoji: '🎬', color: '#F97316' },
   Other: { emoji: '💸', color: '#64748B' },
 } as const;
 

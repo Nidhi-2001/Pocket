@@ -101,7 +101,7 @@ export function CurrencyDropdown({
                       </View>
                     </View>
                     {selected && (
-                      <Ionicons name="checkmark" size={20} color="#4F46E5" />
+                      <Ionicons name="checkmark" size={20} color="#2563EB" />
                     )}
                   </Pressable>
                 );

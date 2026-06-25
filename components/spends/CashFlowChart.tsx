@@ -57,7 +57,7 @@ export function CashFlowChart({ income, expenses, currency }: CashFlowChartProps
         label="Expenses"
         total={totalExpenses}
         currency={currency}
-        valueColor="#F43F5E"
+        valueColor="#EF4444"
         sign="-"
         barPct={expensesBarPct}
         segments={expenses}
@@ -68,7 +68,7 @@ export function CashFlowChart({ income, expenses, currency }: CashFlowChartProps
         <Text className="text-sm font-semibold text-text-secondary">Net</Text>
         <Text
           className="text-lg font-bold"
-          style={{ color: net >= 0 ? '#10B981' : '#F43F5E' }}
+          style={{ color: net >= 0 ? '#10B981' : '#EF4444' }}
         >
           {net >= 0 ? '+' : ''}
           {formatCurrency(net, currency)}

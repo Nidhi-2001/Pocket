@@ -10,13 +10,13 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#6366F1',
-          dark: '#4F46E5',
-          deep: '#4338CA',
+          DEFAULT: '#2563EB',
+          dark: '#1D4ED8',
+          deep: '#1E40AF',
           light: 'rgb(var(--primary-light) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: '#8B5CF6',
+          DEFAULT: '#0EA5E9',
           light: 'rgb(var(--accent-light) / <alpha-value>)',
         },
         success: {
@@ -24,8 +24,8 @@ module.exports = {
           dark: '#059669',
         },
         danger: {
-          DEFAULT: '#F43F5E',
-          dark: '#E11D48',
+          DEFAULT: '#EF4444',
+          dark: '#DC2626',
         },
         warning: '#F59E0B',
         background: 'rgb(var(--background) / <alpha-value>)',

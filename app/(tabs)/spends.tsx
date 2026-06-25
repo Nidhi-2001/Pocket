@@ -48,8 +48,8 @@ interface SourceSummary {
 // Color palette for income source donut. 12 distinct colors recycled if more
 // sources exist.
 const INCOME_COLORS = [
-  '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4',
-  '#84CC16', '#F97316', '#A78BFA', '#14B8A6', '#FB7185', '#0EA5E9',
+  '#2563EB', '#10B981', '#0EA5E9', '#F59E0B', '#14B8A6', '#3B82F6',
+  '#0D9488', '#F97316', '#1D4ED8', '#64748B', '#059669', '#475569',
 ];
 
 function todayYmd(): string {
@@ -262,9 +262,9 @@ export default function SpendsTab() {
       <View className="px-6 mt-2 mb-3 flex-row items-center gap-2">
         <View
           className="w-7 h-7 rounded-full items-center justify-center"
-          style={{ backgroundColor: '#F43F5E22' }}
+          style={{ backgroundColor: '#EF444422' }}
         >
-          <Ionicons name="people-outline" size={14} color="#F43F5E" />
+          <Ionicons name="people-outline" size={14} color="#EF4444" />
         </View>
         <Text className="text-xl font-bold text-text-primary">Splits</Text>
       </View>
@@ -314,7 +314,7 @@ export default function SpendsTab() {
       ) : (
         <>
           {/* === EXPENSES SECTION === */}
-          <SectionHeader icon="trending-down" iconColor="#F43F5E" title="Expenses" />
+          <SectionHeader icon="trending-down" iconColor="#EF4444" title="Expenses" />
           <ExpenseSection
             debits={debits}
             totalExpenses={totalExpenses}
@@ -434,14 +434,14 @@ function ExpenseSection({
         <View className="px-6 mb-5 flex-row gap-2">
           <StatCard
             iconName="trending-up-outline"
-            iconColor="#4F46E5"
+            iconColor="#2563EB"
             label="Daily avg"
             value={formatCurrency(stats.dailyAvg, currency)}
             sub={`${stats.days} day${stats.days === 1 ? '' : 's'}`}
           />
           <StatCard
             iconName="flash-outline"
-            iconColor="#F43F5E"
+            iconColor="#EF4444"
             label="Biggest"
             value={formatCurrency(stats.biggest.amount, currency)}
             sub={stats.biggest.merchant}
@@ -551,7 +551,7 @@ function ExpenseSection({
                         className="h-full rounded-full"
                         style={{
                           width: `${budgetPct}%`,
-                          backgroundColor: overBudget ? '#F43F5E' : seg.color,
+                          backgroundColor: overBudget ? '#EF4444' : seg.color,
                         }}
                       />
                     </View>

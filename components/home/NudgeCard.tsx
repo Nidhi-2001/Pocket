@@ -10,10 +10,10 @@ interface NudgeCardProps {
 }
 
 const TYPE_META: Record<Nudge['type'], { emoji: string; tint: string }> = {
-  budget_warning: { emoji: '⚠️', tint: '#F43F5E' },
-  goal_check: { emoji: '🎯', tint: '#6366F1' },
+  budget_warning: { emoji: '⚠️', tint: '#EF4444' },
+  goal_check: { emoji: '🎯', tint: '#2563EB' },
   weekly_digest: { emoji: '📊', tint: '#10B981' },
-  personality: { emoji: '✨', tint: '#8B5CF6' },
+  personality: { emoji: '✨', tint: '#2563EB' },
   daily_reminder: { emoji: '📝', tint: '#F59E0B' },
 };
 

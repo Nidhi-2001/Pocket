@@ -10,8 +10,8 @@ interface OwedBarChartProps {
   currency: string; // currency for the header total
 }
 
-// Warm palette so multiple people are visually distinct. Recycled if needed.
-const OWE_COLORS = ['#F43F5E', '#FB7185', '#F97316', '#F59E0B', '#EC4899', '#A855F7'];
+// Distinct, professional palette so multiple people stand apart. Recycled if needed.
+const OWE_COLORS = ['#EF4444', '#F97316', '#F59E0B', '#2563EB', '#14B8A6', '#0EA5E9'];
 
 /**
  * Horizontal bar chart of how much the user owes each person on Splitwise.

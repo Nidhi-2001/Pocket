@@ -6,7 +6,7 @@ import { useNetPosition } from '../../hooks/useNetPosition';
 import { formatCurrency } from '../../lib/formatters';
 
 const GREEN = '#10B981';
-const RED = '#F43F5E';
+const RED = '#EF4444';
 
 /**
  * Cumulative "where you stand" summary — net flow (all recorded income vs

@@ -57,7 +57,7 @@ export function CashFlowCard({
 
       <View className="p-6">
         <Text
-          style={{ color: '#E0E7FF' }}
+          style={{ color: '#DBEAFE' }}
           className="text-xs uppercase tracking-widest font-bold mb-4"
         >
           This month&apos;s cash flow
@@ -92,7 +92,7 @@ export function CashFlowCard({
           />
         </View>
 
-        <Text style={{ color: '#E0E7FF' }} className="text-xs font-medium">
+        <Text style={{ color: '#DBEAFE' }} className="text-xs font-medium">
           {income > 0
             ? overspent
               ? `Spent ${pctSpent.toFixed(0)}% of income — over by ${formatCurrency(expenses - income, currency)}`
@@ -127,7 +127,7 @@ interface MetricProps {
 function Metric({ label, value, valueColor }: MetricProps) {
   return (
     <View className="flex-1">
-      <Text style={{ color: '#C7D2FE' }} className="text-[11px] font-medium mb-1">
+      <Text style={{ color: '#BFDBFE' }} className="text-[11px] font-medium mb-1">
         {label}
       </Text>
       <Text

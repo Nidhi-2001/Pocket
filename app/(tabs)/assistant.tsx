@@ -168,7 +168,7 @@ export default function AssistantTab() {
             onPress={voice.toggle}
             disabled={voice.busy}
             className="w-11 h-11 rounded-full items-center justify-center border border-border"
-            style={{ backgroundColor: voice.recording ? '#F43F5E' : '#FFFFFF' }}
+            style={{ backgroundColor: voice.recording ? '#EF4444' : '#FFFFFF' }}
           >
             {voice.busy ? (
               <ActivityIndicator size="small" />
@@ -176,7 +176,7 @@ export default function AssistantTab() {
               <Ionicons
                 name={voice.recording ? 'stop' : 'mic-outline'}
                 size={20}
-                color={voice.recording ? '#FFFFFF' : '#4F46E5'}
+                color={voice.recording ? '#FFFFFF' : '#2563EB'}
               />
             )}
           </Pressable>

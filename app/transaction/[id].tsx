@@ -231,7 +231,7 @@ export default function TransactionDetail() {
           onPress={confirmDelete}
           className="flex-row items-center justify-center gap-2 border border-danger py-4 rounded-2xl active:opacity-80"
         >
-          <Ionicons name="trash-outline" size={18} color="#F43F5E" />
+          <Ionicons name="trash-outline" size={18} color="#EF4444" />
           <Text className="text-danger font-medium">Delete transaction</Text>
         </Pressable>
       </View>
