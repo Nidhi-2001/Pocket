@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { shadows } from '../../constants/theme';
+import { GlassView } from '../ui/GlassView';
 import { useInsight } from '../../hooks/useInsight';
 
 const PURPLE = '#8B5CF6';
@@ -21,33 +22,30 @@ export function InsightCard() {
 
   if (loading && !insight) {
     return (
-      <View className="bg-surface rounded-3xl p-4 flex-row items-center gap-3" style={shadows.sm}>
+      <GlassView className="rounded-3xl p-4 flex-row items-center gap-3" style={shadows.sm}>
         <IconChip />
         <Text className="text-sm text-text-muted flex-1">Looking at your money…</Text>
         <ActivityIndicator size="small" />
-      </View>
+      </GlassView>
     );
   }
 
   if (!insight) {
     return (
-      <View className="bg-surface rounded-3xl p-4 flex-row items-start gap-3" style={shadows.sm}>
+      <GlassView className="rounded-3xl p-4 flex-row items-start gap-3" style={shadows.sm}>
         <IconChip outline />
         <Text className="flex-1 text-sm text-text-secondary leading-relaxed pt-1">
           Log a few more transactions and I&apos;ll start surfacing insights about
           your money here.
         </Text>
-      </View>
+      </GlassView>
     );
   }
 
   const tappable = !!insight.related_category;
 
   return (
-    <View
-      className="rounded-3xl p-4"
-      style={[{ backgroundColor: PURPLE + '14' }, shadows.sm]}
-    >
+    <GlassView className="rounded-3xl p-4" style={shadows.sm}>
       <View className="flex-row items-start gap-3">
         <IconChip />
         <View className="flex-1">
@@ -77,7 +75,7 @@ export function InsightCard() {
           </Pressable>
         </View>
       </View>
-    </View>
+    </GlassView>
   );
 }
 

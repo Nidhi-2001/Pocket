@@ -4,6 +4,8 @@ import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native
 import { useSplitwiseConnection } from '../../hooks/useSplitwiseConnection';
 import { buildSplitwiseAuthorizeUrl } from '../../lib/splitwise';
 import { supabase } from '../../lib/supabase';
+import { GlassView } from '../ui/GlassView';
+import { shadows } from '../../constants/theme';
 
 function randomState(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -38,7 +40,7 @@ export function SplitwiseConnectCard() {
   }
 
   return (
-    <View className="bg-surface border border-border rounded-2xl p-5">
+    <GlassView className="rounded-2xl p-5" style={shadows.sm}>
       <View className="flex-row items-center gap-3">
         <View
           className="w-9 h-9 rounded-full items-center justify-center"
@@ -77,6 +79,6 @@ export function SplitwiseConnectCard() {
           <Text className="text-sm font-semibold text-white">Connect Splitwise</Text>
         </Pressable>
       )}
-    </View>
+    </GlassView>
   );
 }

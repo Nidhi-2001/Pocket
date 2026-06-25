@@ -12,7 +12,9 @@ import { CashFlowChart, type FlowSegment } from '../../components/spends/CashFlo
 import { DonutChart, type DonutSegment } from '../../components/spends/DonutChart';
 import { OwedBarChart } from '../../components/spends/OwedBarChart';
 import { SplitwiseImportButton } from '../../components/spends/SplitwiseImportButton';
-import { categories, type CategoryKey } from '../../constants/theme';
+import { GlassView } from '../../components/ui/GlassView';
+import { ScreenBackground } from '../../components/ui/ScreenBackground';
+import { categories, shadows, type CategoryKey } from '../../constants/theme';
 import { useCategoryBudgets } from '../../hooks/useCategoryBudgets';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useSplitwiseBalances } from '../../hooks/useSplitwiseBalances';
@@ -168,7 +170,9 @@ export default function SpendsTab() {
   }, [range, customStart, customEnd]);
 
   return (
-    <ScrollView className="flex-1 bg-background">
+    <View className="flex-1 bg-background">
+      <ScreenBackground />
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }}>
       <View className="px-6 pt-16 pb-3">
         <Text className="text-[32px] font-extrabold text-text-primary mb-1 tracking-tight">Spends</Text>
         <Text className="text-base text-text-secondary">{periodSubtitle}</Text>
@@ -329,7 +333,8 @@ export default function SpendsTab() {
           />
         </>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -456,7 +461,7 @@ function ExpenseSection({
           <Text className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-2">
             Top merchants
           </Text>
-          <View className="bg-surface border border-border rounded-2xl overflow-hidden">
+          <GlassView className="rounded-2xl overflow-hidden" style={shadows.sm}>
             {topMerchants.map((m, idx) => {
               const catMeta = categories[m.category];
               return (
@@ -487,7 +492,7 @@ function ExpenseSection({
                 </View>
               );
             })}
-          </View>
+          </GlassView>
         </View>
       )}
 
@@ -503,7 +508,7 @@ function ExpenseSection({
             const budgetPct = budget > 0 ? Math.min(100, (seg.value / budget) * 100) : 0;
             const overBudget = budget > 0 && seg.value > budget;
             return (
-              <View key={seg.category} className="bg-surface border border-border rounded-2xl p-4">
+              <GlassView key={seg.category} className="rounded-2xl p-4" style={shadows.sm}>
                 <View className="flex-row items-center mb-3">
                   <View
                     className="w-10 h-10 rounded-full items-center justify-center mr-3"
@@ -552,7 +557,7 @@ function ExpenseSection({
                     </View>
                   </View>
                 )}
-              </View>
+              </GlassView>
             );
           })}
         </View>
@@ -609,7 +614,7 @@ function IncomeSection({ credits, totalIncome, currency }: IncomeSectionProps) {
           {sources.map((s) => {
             const pct = totalIncome > 0 ? (s.total / totalIncome) * 100 : 0;
             return (
-              <View key={s.source} className="bg-surface border border-border rounded-2xl p-4">
+              <GlassView key={s.source} className="rounded-2xl p-4" style={shadows.sm}>
                 <View className="flex-row items-center mb-2">
                   <View
                     className="w-3 h-3 rounded-full mr-3"
@@ -636,7 +641,7 @@ function IncomeSection({ credits, totalIncome, currency }: IncomeSectionProps) {
                     style={{ width: `${pct}%`, backgroundColor: s.color }}
                   />
                 </View>
-              </View>
+              </GlassView>
             );
           })}
         </View>
@@ -654,7 +659,7 @@ interface StatCardProps {
 }
 function StatCard({ iconName, iconColor, label, value, sub }: StatCardProps) {
   return (
-    <View className="flex-1 bg-surface border border-border rounded-2xl p-3">
+    <GlassView className="flex-1 rounded-2xl p-3" style={shadows.sm}>
       <View
         className="w-7 h-7 rounded-full items-center justify-center mb-2"
         style={{ backgroundColor: iconColor + '22' }}
@@ -672,6 +677,6 @@ function StatCard({ iconName, iconColor, label, value, sub }: StatCardProps) {
           {sub}
         </Text>
       )}
-    </View>
+    </GlassView>
   );
 }

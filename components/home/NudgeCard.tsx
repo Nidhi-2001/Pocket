@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import { shadows } from '../../constants/theme';
+import { GlassView } from '../ui/GlassView';
 import type { Nudge } from '../../types';
 
 interface NudgeCardProps {
@@ -19,10 +20,7 @@ const TYPE_META: Record<Nudge['type'], { emoji: string; tint: string }> = {
 export function NudgeCard({ nudge, onDismiss }: NudgeCardProps) {
   const meta = TYPE_META[nudge.type] ?? TYPE_META.weekly_digest;
   return (
-    <View
-      className="rounded-3xl p-4 flex-row gap-3"
-      style={[{ backgroundColor: meta.tint + '16' }, shadows.sm]}
-    >
+    <GlassView className="rounded-3xl p-4 flex-row gap-3" style={shadows.sm}>
       <Text className="text-2xl">{meta.emoji}</Text>
       <View className="flex-1">
         <Text
@@ -41,6 +39,6 @@ export function NudgeCard({ nudge, onDismiss }: NudgeCardProps) {
       >
         <Ionicons name="close" size={18} color="#9CA3AF" />
       </Pressable>
-    </View>
+    </GlassView>
   );
 }

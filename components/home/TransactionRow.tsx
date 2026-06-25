@@ -1,7 +1,8 @@
 import { Link } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useCurrency } from '../../hooks/useCurrency';
 import { categories, shadows } from '../../constants/theme';
+import { useGlassStyle } from '../ui/GlassView';
 import { formatCurrency, formatDate } from '../../lib/formatters';
 import type { Transaction } from '../../types';
 
@@ -11,13 +12,14 @@ interface TransactionRowProps {
 
 export function TransactionRow({ tx }: TransactionRowProps) {
   const currency = useCurrency();
+  const glass = useGlassStyle();
   const meta = categories[tx.category];
   const isDebit = tx.transaction_type === 'debit';
   return (
     <Link href={`/transaction/${tx.id}`} asChild>
       <Pressable
-        className="flex-row items-center bg-surface rounded-2xl p-4 active:opacity-70"
-        style={shadows.sm}
+        className="flex-row items-center rounded-2xl p-4 active:opacity-70"
+        style={StyleSheet.flatten([glass, shadows.sm])}
       >
         <View
           className="w-12 h-12 rounded-2xl items-center justify-center mr-3"

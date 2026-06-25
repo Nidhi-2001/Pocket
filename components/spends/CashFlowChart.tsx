@@ -1,4 +1,6 @@
 import { Text, View } from 'react-native';
+import { shadows } from '../../constants/theme';
+import { GlassView } from '../ui/GlassView';
 import { formatCurrency } from '../../lib/formatters';
 
 export interface FlowSegment {
@@ -32,7 +34,7 @@ export function CashFlowChart({ income, expenses, currency }: CashFlowChartProps
   const net = totalIncome - totalExpenses;
 
   return (
-    <View className="bg-surface border border-border rounded-2xl p-5">
+    <GlassView className="rounded-2xl p-5" style={shadows.sm}>
       <Text className="text-xs text-text-muted uppercase tracking-wider font-semibold mb-5">
         Income vs Expenses
       </Text>
@@ -84,7 +86,7 @@ export function CashFlowChart({ income, expenses, currency }: CashFlowChartProps
           )}
         </View>
       )}
-    </View>
+    </GlassView>
   );
 }
 

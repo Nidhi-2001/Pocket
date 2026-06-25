@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { shadows } from '../../constants/theme';
+import { GlassView } from '../ui/GlassView';
 import { getCurrency, majorToMinor } from '../../lib/currency';
 import { formatCurrency, formatDateOnly } from '../../lib/formatters';
 import { supabase } from '../../lib/supabase';
@@ -71,7 +72,7 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
   }
 
   return (
-    <View className="bg-surface rounded-3xl p-5" style={shadows.sm}>
+    <GlassView className="rounded-3xl p-5" style={shadows.sm}>
       <View className="flex-row items-start justify-between mb-3">
         <View className="flex-row items-center gap-3 flex-1 mr-2">
           <Text className="text-3xl">{goal.emoji}</Text>
@@ -151,6 +152,6 @@ export function GoalCard({ goal, onChange }: GoalCardProps) {
           </Pressable>
         </View>
       )}
-    </View>
+    </GlassView>
   );
 }

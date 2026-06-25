@@ -11,6 +11,8 @@ import {
 import { CategoryBudgetsCard } from '../../components/profile/CategoryBudgetsCard';
 import { SplitwiseConnectCard } from '../../components/profile/SplitwiseConnectCard';
 import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
+import { GlassView } from '../../components/ui/GlassView';
+import { ScreenBackground } from '../../components/ui/ScreenBackground';
 import { shadows } from '../../constants/theme';
 import {
   type CurrencyCode,
@@ -119,7 +121,9 @@ export default function ProfileTab() {
   const editCur = getCurrency(editCurrency);
 
   return (
-    <ScrollView className="flex-1 bg-background">
+    <View className="flex-1 bg-background">
+      <ScreenBackground />
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }}>
       <View className="px-6 pt-16 pb-4 flex-row items-center justify-between">
         <Text className="text-[32px] font-extrabold text-text-primary tracking-tight">Profile</Text>
         {!editing && profile && (
@@ -135,7 +139,7 @@ export default function ProfileTab() {
 
       <View className="px-6 pb-6">
         {editing ? (
-          <View className="bg-surface border border-border rounded-2xl p-5">
+          <GlassView className="rounded-2xl p-5" style={shadows.sm}>
             <Text className="text-xs text-text-secondary mb-1">Name</Text>
             <TextInput
               value={editName}
@@ -206,9 +210,9 @@ export default function ProfileTab() {
                 )}
               </Pressable>
             </View>
-          </View>
+          </GlassView>
         ) : (
-          <View className="bg-surface rounded-3xl px-5" style={shadows.sm}>
+          <GlassView className="rounded-3xl px-5" style={shadows.sm}>
             <InfoRow label="Name" value={profile?.name ?? '—'} />
             <InfoRow label="Email" value={email ?? '—'} />
             <InfoRow
@@ -235,7 +239,7 @@ export default function ProfileTab() {
               }
               last
             />
-          </View>
+          </GlassView>
         )}
       </View>
 
@@ -256,7 +260,8 @@ export default function ProfileTab() {
           <Text className="text-text-secondary font-medium">Sign out</Text>
         </Pressable>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -273,7 +278,7 @@ const APPEARANCE_OPTIONS: {
 function AppearanceCard() {
   const { pref, setPref } = useThemePref();
   return (
-    <View className="bg-surface rounded-3xl p-5" style={shadows.sm}>
+    <GlassView className="rounded-3xl p-5" style={shadows.sm}>
       <View className="flex-row items-center gap-2 mb-3">
         <Ionicons name="contrast-outline" size={18} color="#6366F1" />
         <Text className="text-sm font-bold text-text-primary">Appearance</Text>
@@ -305,7 +310,7 @@ function AppearanceCard() {
           );
         })}
       </View>
-    </View>
+    </GlassView>
   );
 }
 

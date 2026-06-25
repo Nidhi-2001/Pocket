@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { colors, gradients, shadows } from '../../constants/theme';
+import { GlassView } from '../../components/ui/GlassView';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 export default function TabsLayout() {
@@ -13,18 +14,23 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: c.textMuted,
+        // Floating frosted-glass bar — the screen's ScreenBackground shows
+        // through it. Screens add bottom padding so content clears it.
         tabBarStyle: {
-          backgroundColor: c.surface,
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'transparent',
           borderTopWidth: 0,
           height: 72,
           paddingBottom: 12,
           paddingTop: 10,
-          shadowColor: '#000000',
-          shadowOpacity: 0.1,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: -4 },
-          elevation: 12,
+          elevation: 0,
         },
+        tabBarBackground: () => (
+          <GlassView blur={24} style={{ flex: 1, borderWidth: 0, borderTopWidth: 1 }} />
+        ),
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',

@@ -4,6 +4,8 @@ import { ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { gradients, shadows } from '../../constants/theme';
 import { CashFlowCard } from '../../components/home/CashFlowCard';
+import { GlassView } from '../../components/ui/GlassView';
+import { ScreenBackground } from '../../components/ui/ScreenBackground';
 import { InsightCard } from '../../components/home/InsightCard';
 import { NetPositionCard } from '../../components/home/NetPositionCard';
 import { NudgeCard } from '../../components/home/NudgeCard';
@@ -55,7 +57,9 @@ export default function HomeTab() {
   const initial = displayName.trim().charAt(0).toUpperCase() || '👋';
 
   return (
-    <ScrollView className="flex-1 bg-background">
+    <View className="flex-1 bg-background">
+      <ScreenBackground />
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }}>
       <View className="px-6 pt-16 pb-4 flex-row items-center justify-between">
         <View className="flex-1 pr-3">
           <Text className="text-sm text-text-secondary mb-1 font-medium">
@@ -116,12 +120,12 @@ export default function HomeTab() {
 
       <View className="px-6 mb-6">
         {recentFive.length === 0 ? (
-          <View className="bg-surface rounded-3xl p-7 items-center" style={shadows.sm}>
+          <GlassView className="rounded-3xl p-7 items-center" style={shadows.sm}>
             <Text className="text-4xl mb-2">📭</Text>
             <Text className="text-text-secondary text-center text-sm">
               No transactions yet. Tap the ✨ button to add one.
             </Text>
-          </View>
+          </GlassView>
         ) : (
           <View className="gap-2">
             {recentFive.map((tx) => (
@@ -139,6 +143,7 @@ export default function HomeTab() {
           <UploadStatementCard onSuccess={refetchTxs} />
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }

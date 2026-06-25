@@ -3,6 +3,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { shadows } from '../../constants/theme';
+import { GlassView } from '../ui/GlassView';
 import { supabase } from '../../lib/supabase';
 
 interface UploadStatementCardProps {
@@ -149,7 +150,7 @@ export function UploadStatementCard({ onSuccess }: UploadStatementCardProps) {
   }
 
   return (
-    <View className="bg-surface rounded-3xl p-5" style={shadows.sm}>
+    <GlassView className="rounded-3xl p-5" style={shadows.sm}>
       <View className="flex-row items-center gap-2 mb-2">
         <Ionicons name="document-text-outline" size={18} color="#6366F1" />
         <Text className="text-sm font-bold text-text-primary">
@@ -215,6 +216,6 @@ export function UploadStatementCard({ onSuccess }: UploadStatementCardProps) {
           {error}
         </Text>
       )}
-    </View>
+    </GlassView>
   );
 }

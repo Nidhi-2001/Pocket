@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { GoalCard } from '../../components/goals/GoalCard';
 import { CurrencyDropdown } from '../../components/ui/CurrencyDropdown';
+import { GlassView } from '../../components/ui/GlassView';
+import { ScreenBackground } from '../../components/ui/ScreenBackground';
 import { shadows } from '../../constants/theme';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useGoals } from '../../hooks/useGoals';
@@ -73,7 +75,9 @@ export default function GoalsTab() {
   const newCur = getCurrency(newCurrency);
 
   return (
-    <ScrollView className="flex-1 bg-background">
+    <View className="flex-1 bg-background">
+      <ScreenBackground />
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 96 }}>
       <View className="px-6 pt-16 pb-4 flex-row items-start justify-between">
         <View className="flex-1">
           <Text className="text-[32px] font-extrabold text-text-primary mb-1 tracking-tight">
@@ -94,7 +98,7 @@ export default function GoalsTab() {
 
       {showNew && (
         <View className="px-6 mb-6">
-          <View className="bg-surface border border-border rounded-2xl p-5">
+          <GlassView className="rounded-2xl p-5" style={shadows.sm}>
             <Text className="text-base font-semibold text-text-primary mb-4">
               New goal
             </Text>
@@ -168,7 +172,7 @@ export default function GoalsTab() {
                 <Text className="text-white font-semibold">Create goal</Text>
               )}
             </Pressable>
-          </View>
+          </GlassView>
         </View>
       )}
 
@@ -178,7 +182,7 @@ export default function GoalsTab() {
             <ActivityIndicator />
           </View>
         ) : goals.length === 0 ? (
-          <View className="bg-surface border border-border rounded-2xl p-8 items-center">
+          <GlassView className="rounded-2xl p-8 items-center" style={shadows.sm}>
             <Text className="text-5xl mb-3">🎯</Text>
             <Text className="text-base font-medium text-text-primary mb-1">
               No goals yet
@@ -187,7 +191,7 @@ export default function GoalsTab() {
               Tap + to create your first one. A Tokyo trip, a laptop, an
               emergency fund — whatever you&apos;re saving for.
             </Text>
-          </View>
+          </GlassView>
         ) : (
           <View className="gap-3">
             {goals.map((g) => (
@@ -196,6 +200,7 @@ export default function GoalsTab() {
           </View>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }

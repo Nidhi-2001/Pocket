@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 import { shadows } from '../../constants/theme';
+import { GlassView } from '../ui/GlassView';
 import { useCurrency } from '../../hooks/useCurrency';
 import { useNetPosition } from '../../hooks/useNetPosition';
 import { formatCurrency } from '../../lib/formatters';
@@ -17,7 +18,7 @@ export function NetPositionCard() {
   const { netFlow, oweMinor, owedToMeMinor, netPosition } = useNetPosition();
 
   return (
-    <View className="bg-surface rounded-3xl p-5" style={shadows.sm}>
+    <GlassView className="rounded-3xl p-5" style={shadows.sm}>
       <Text className="text-xs text-text-muted uppercase tracking-widest font-bold mb-2">
         Net position
       </Text>
@@ -55,7 +56,7 @@ export function NetPositionCard() {
           />
         )}
       </View>
-    </View>
+    </GlassView>
   );
 }
 

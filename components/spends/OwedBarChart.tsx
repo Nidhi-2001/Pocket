@@ -1,5 +1,7 @@
 import { Text, View } from 'react-native';
 import type { OwedItem } from '../../hooks/useSplitwiseBalances';
+import { shadows } from '../../constants/theme';
+import { GlassView } from '../ui/GlassView';
 import { formatCurrency } from '../../lib/formatters';
 
 interface OwedBarChartProps {
@@ -21,7 +23,7 @@ export function OwedBarChart({ items, totalMinor, currency }: OwedBarChartProps)
   const max = Math.max(...items.map((i) => i.amountMinor), 1);
 
   return (
-    <View className="bg-surface border border-border rounded-2xl p-5">
+    <GlassView className="rounded-2xl p-5" style={shadows.sm}>
       <View className="flex-row items-center justify-between mb-1">
         <Text className="text-xs text-text-muted uppercase tracking-wider font-semibold">
           You owe
@@ -62,6 +64,6 @@ export function OwedBarChart({ items, totalMinor, currency }: OwedBarChartProps)
           );
         })}
       </View>
-    </View>
+    </GlassView>
   );
 }

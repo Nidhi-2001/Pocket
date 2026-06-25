@@ -6,6 +6,8 @@ import { useCurrency } from '../../hooks/useCurrency';
 import { getCurrency, majorToMinor, minorToMajor } from '../../lib/currency';
 import { formatCurrency } from '../../lib/formatters';
 import { supabase } from '../../lib/supabase';
+import { GlassView } from '../ui/GlassView';
+import { shadows } from '../../constants/theme';
 import type { CategoryBudget } from '../../types';
 
 const ALL_CATEGORIES: CategoryKey[] = [
@@ -80,7 +82,7 @@ export function CategoryBudgetsCard() {
   }
 
   return (
-    <View className="bg-surface border border-border rounded-2xl p-5">
+    <GlassView className="rounded-2xl p-5" style={shadows.sm}>
       <View className="flex-row items-center gap-2 mb-1">
         <Ionicons name="wallet-outline" size={18} color="#4F46E5" />
         <Text className="text-base font-semibold text-text-primary">
@@ -152,6 +154,6 @@ export function CategoryBudgetsCard() {
           })}
         </View>
       )}
-    </View>
+    </GlassView>
   );
 }
