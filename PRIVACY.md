@@ -1,9 +1,6 @@
 # Pocket — Privacy Policy
 
-> **▸ Before publishing:** replace `[your contact email]` (appears 3×, below) with the
-> address you want users to reach you at, and confirm the "Last updated" date.
-
-_Last updated: June 24, 2026_  ·  Contact: **[your contact email]**
+_Last updated: June 25, 2026_  ·  Contact: **nidhilade10@gmail.com**
 
 Pocket ("we", "the app") helps you understand your spending. This policy
 explains what data we handle and why. We collect only what's needed to run the
@@ -58,7 +55,7 @@ We do not sell your data or use it for advertising.
 - Voice recordings are not retained after they are transcribed.
 - You can edit or delete transactions in the app, disconnect Splitwise, disable
   notifications, and request full account/data deletion by emailing
-  **[your contact email]**.
+  **nidhilade10@gmail.com**.
 
 ## Security
 
@@ -76,4 +73,4 @@ We may update this policy; the "last updated" date will change accordingly.
 
 ## Contact
 
-Questions? Email **[your contact email]**.
+Questions? Email **nidhilade10@gmail.com**.
