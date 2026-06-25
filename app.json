@@ -27,7 +27,13 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Pocket to record audio so you can log expenses with your voice."
+        }
+      ]
     ],
     "extra": {
       "router": {},
