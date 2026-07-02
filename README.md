@@ -2,16 +2,18 @@
 
 > Your money, finally explained.
 
-Pocket is an AI-powered spending accountability app for young adults (18–26)
+Pocket is an AI-powered personal-finance app for young adults (18–26)
 **anywhere in the world**. Each user picks their own currency (USD, EUR, GBP,
-JPY, INR, and many more). It reads bank notification messages, auto-categorises
-every transaction, and helps the user understand their money through a
-conversational chat interface, smart nudges, and a monthly **Spending
-Personality** card.
+JPY, INR, and many more). Log spends and income by **typing or speaking** to a
+natural-language assistant, snap a bank/credit-card **statement PDF**, connect
+**Splitwise**, and understand your money through budgets, goals, proactive AI
+insights, and a monthly **Spending Personality** card.
 
 This repo is a personal project by [@Nidhi-2001](https://github.com/Nidhi-2001),
-built openly. It is not production yet. Contributions and feedback are welcome
-but the roadmap below is the source of truth for direction.
+built openly. It is **live in web beta at
+[pocketme.netlify.app](https://pocketme.netlify.app)** (native iOS/Android is a
+follow-up). Contributions and feedback are welcome, but the roadmap below is the
+source of truth for direction.
 
 ---
 
@@ -31,43 +33,43 @@ but the roadmap below is the source of truth for direction.
 
 ## Status
 
-**MVP Phases 0–6 plus Phases 7–8 and a Splitwise integration (Phase 9) are
-complete.** Cron scheduling and a landing page are the remaining optional polish.
+**Live in web beta** at [pocketme.netlify.app](https://pocketme.netlify.app)
+(Netlify, auto-deployed from `main`). MVP Phases 0–9 are complete, plus a
+post-MVP pass (Phase 10): the assistant, voice, insights, alerts, a
+password auth flow, a full visual redesign, and deployment.
 
-| # | Phase                                              | Status |
-| - | -------------------------------------------------- | ------ |
-| 0 | Foundation: Expo + NativeWind + GitHub             | ✅      |
-| 1 | Backend: Supabase project + schema + RLS           | ✅      |
-| 2 | Auth + onboarding screens (email OTP)              | ✅      |
-| 3 | SMS parser edge function (Groq)                    | ✅      |
-| 4 | Core screens: Home, Spends, Transaction detail     | ✅      |
-| 5 | AI chat edge function (Groq) + chat screen         | ✅      |
-| 6 | Goals + nudges + monthly personality               | ✅\*    |
-| 7 | PDF statement upload (`parse-statement`, Groq)     | ✅      |
-| 8 | Income tracking + per-category budgets + cash flow | ✅      |
-| 9 | Splitwise: "you owe" chart, import paid expenses, OAuth connect, cumulative Net position | ✅ |
-| + | Cron scheduling for nudges / personality           | ☐      |
-| + | Landing page (Vercel) — only for Play Store        | ☐      |
+| #  | Phase                                              | Status |
+| -- | -------------------------------------------------- | ------ |
+| 0  | Foundation: Expo + NativeWind + GitHub             | ✅      |
+| 1  | Backend: Supabase project + schema + RLS           | ✅      |
+| 2  | Auth + onboarding (email **+ password**, email-code verification) | ✅ |
+| 3  | SMS parser edge function (Groq)                    | ✅†     |
+| 4  | Core screens: Home, Spends, Transaction detail     | ✅      |
+| 5  | AI chat edge function (Groq)                        | ✅†     |
+| 6  | Goals + nudges + monthly personality               | ✅      |
+| 7  | PDF statement upload (`parse-statement`, Groq)     | ✅      |
+| 8  | Income tracking + per-category budgets + cash flow | ✅      |
+| 9  | Splitwise: "you owe" chart, import, OAuth, Net position | ✅ |
+| 10 | Assistant (NL + **voice**), proactive AI insights, alerts, password auth, redesign (glassmorphism + slate theme, dark mode), **Netlify deploy** | ✅ |
 
-\* Phase 6 is functionally complete: Goals UI, `goal-nudge` and `personality`
-edge functions, and Home surfacing all work. Cron *scheduling* (so the
-functions run automatically on a schedule) is the one optional bit that
-isn't wired up — for now both functions can be invoked on-demand from
-Home's "Pocket insights" buttons. Set up via Supabase dashboard or
-pg_cron when ready for production.
+† `parse-sms` and `chat-agent` are **superseded** — this build logs spends via
+the assistant (not SMS reading), and chat was folded into the assistant. Both
+are candidates for removal.
 
-All AI agents (SMS parser, statement parser, chat, personality, nudges) run on
-**Groq `llama-3.3-70b-versatile`** — not Gemini or Mistral.
+All AI agents run on **Groq `llama-3.3-70b-versatile`**; voice transcription uses
+**Groq Whisper**. The RN bundle never calls a provider directly — only Edge
+Functions do.
 
-What runs today: the app is a working spending dashboard. A signed-in user can
-- complete the email-OTP onboarding (welcome → SMS-permission → OTP → setup),
-- log transactions manually on Home — expenses (with a category) or income — since this build doesn't read SMS,
-- upload a credit-card / bank statement PDF and have every transaction parsed in,
-- connect Splitwise (OAuth) to see what they owe per person, and import the expenses they paid as transactions,
-- see month-to-date spend vs budget plus a cumulative "Net position" (transactions netted against the Splitwise balance) on Home,
-- browse recent transactions on Home and a category donut + income/expense cash-flow breakdown on Spends,
-- tap a transaction to open a full-screen detail, change its category, or delete it,
-- navigate between 5 tabs (Home, Spends, Goals, Chat, Profile) with persistent state and refetch-on-focus so edits propagate instantly.
+What runs today (signed-in user):
+- **Onboarding**: welcome → how-it-works → **sign up with email + password**, verified by an emailed 6-digit code. Also password login, "email me a code" fallback, and forgot-password. Auth emails send via SMTP (see [`AGENTS.md`](./AGENTS.md)).
+- **Pocket Assistant** (center tab): log a spend/income or ask a question in natural language — by **typing or voice** (mic → Groq Whisper → the assistant).
+- Upload a bank/credit-card **statement PDF** → every transaction parsed in.
+- Connect **Splitwise** (OAuth) → per-person "you owe" chart + import paid expenses.
+- **Home**: gradient cash-flow hero, a **proactive AI insight**, nudges/alerts, a cumulative **Net position** (transactions netted against the Splitwise balance), recent transactions.
+- **Spends**: category donut + income/expense cash-flow breakdown + budgets.
+- **Goals**, per-category **budgets**, and a transaction detail screen (edit category / delete).
+- **Dark mode** (System / Light / Dark) and a frosted-glass "slate monochrome" theme.
+- 5 tabs (Home, Spends, **Assistant**, Goals, Profile) with refetch-on-focus so edits propagate instantly.
 
 ---
 
@@ -100,9 +102,10 @@ statements, or syncing Splitwise — without maintaining a spreadsheet.
 | Styling          | NativeWind (Tailwind CSS for RN)                                          | One styling vocabulary across mobile + web; no `StyleSheet.create` |
 | Routing          | Expo Router (file-based)                                                  | URL-addressable screens; same mental model as Next.js              |
 | Backend          | Supabase (Postgres + auth + edge functions + cron)                        | One platform, generous free tier, RLS first-class                  |
-| AI — all agents  | Groq `llama-3.3-70b-versatile` (SMS parsing, chat, monthly personality)   | One provider, one key, fastest inference. Free tier (30 RPM, 14.4k req/day) is more than enough for personal-scale traffic. |
-| Auth             | Supabase email OTP                                                        | Free; pivoted from phone OTP after Supabase required a paid SMS provider |
-| Build            | EAS Build                                                                 | Cloud builds; no Android Studio / Xcode needed locally             |
+| AI — all agents  | Groq `llama-3.3-70b-versatile` (assistant, statement parsing, insights, personality); Groq Whisper for voice | One provider, one key, fastest inference. Free tier is ample for personal-scale traffic. |
+| Auth             | Supabase email **+ password**, with an emailed verification code          | Passwordless-code fallback + forgot-password too; emails via custom SMTP (Gmail/Resend) |
+| Hosting (web)    | Netlify — auto-deploy from `main` ([pocketme.netlify.app](https://pocketme.netlify.app)) | SPA export of the Expo web build; native (EAS) is a follow-up      |
+| Build (native)   | EAS Build                                                                 | Cloud builds; no Android Studio / Xcode needed locally             |
 | Landing page     | Next.js on Vercel                                                         | Static + fast; only needed at Play Store submission                |
 
 Every paid-tier AI key is **server-side only** (Supabase Edge Functions). The
@@ -173,11 +176,14 @@ npx expo start --web
 # open http://localhost:8081
 ```
 
-Then run the migrations in `supabase/migrations/` in order (0001 → 0006)
+Then run the migrations in `supabase/migrations/` in order (0001 → 0010)
 against your Supabase project (SQL Editor → paste → run) to create the tables.
-Configure email OTP per [Phase 2.3 notes in `AGENTS.md`](./AGENTS.md). For the
-Splitwise integration, set the `SPLITWISE_*` secrets and deploy the
-`supabase/functions/splitwise-*` edge functions.
+Configure auth email + SMTP per the [auth notes in `AGENTS.md`](./AGENTS.md)
+(email + password with an emailed verification code; templates need
+`{{ .Token }}`). For Splitwise, set the `SPLITWISE_*` secrets and deploy the
+`supabase/functions/splitwise-*` edge functions. Deploying the web app is
+covered in [`NETLIFY_DEPLOY.md`](./NETLIFY_DEPLOY.md); pre-launch tasks (secret
+rotation, SMTP, Splitwise callback) are in [`PRE_DEPLOY.md`](./PRE_DEPLOY.md).
 
 ---
 
@@ -189,27 +195,30 @@ Pocket/
 │  ├─ _layout.tsx                Root layout + auth guard
 │  ├─ (auth)/                    Unauthenticated routes
 │  │  ├─ welcome.tsx
-│  │  ├─ sms-permission.tsx
-│  │  ├─ otp.tsx                 Email + 6-10 digit code
+│  │  ├─ how-it-works.tsx        Onboarding: what Pocket does
+│  │  ├─ auth.tsx                Email + password signup / login / reset (email code)
 │  │  └─ setup.tsx               Name + monthly budget
-│  └─ (tabs)/                    Authenticated routes (tab nav in Phase 4)
-│     └─ index.tsx               Home (placeholder for now)
-├─ components/                   Reusable UI primitives (filled in Phase 4+)
-│  ├─ ui/  home/  spends/  chat/  goals/
+│  └─ (tabs)/                    Home, Spends, Assistant (center), Goals, Profile
+│     └─ index.tsx               Home dashboard
+├─ components/                   Reusable UI primitives
+│  ├─ ui/ (GlassView, ScreenBackground, …)  home/  spends/  goals/  profile/
 ├─ constants/
 │  └─ theme.ts                   colors, categories, spacing, radius
 ├─ hooks/                        useTransactions, useAuth, etc. (Phase 4+)
 ├─ lib/
 │  ├─ supabase.ts                Client init (anon key, AsyncStorage session)
-│  └─ formatters.ts              ₹ paise → "₹1,299"; IST date formatting
+│  └─ formatters.ts              minor-units → "$1,299"; device-local dates
 ├─ supabase/
 │  ├─ migrations/
-│  │  └─ 0001_initial_schema.sql 7 tables + RLS + handle_new_user trigger
+│  │  └─ 0001…0010.sql           tables + RLS + triggers (all owner-scoped)
 │  └─ functions/
-│     ├─ parse-sms/              Edge function (Phase 3)
-│     ├─ chat-agent/             Edge function (Phase 5)
-│     ├─ goal-nudge/             Cron (Phase 6)
-│     └─ personality/            Cron (Phase 6)
+│     ├─ assistant/              NL record + answer (primary input path)
+│     ├─ transcribe/             Voice → text (Groq Whisper)
+│     ├─ generate-insights/      Proactive daily insight
+│     ├─ parse-statement/        PDF statement → transactions
+│     ├─ splitwise-*/            balances, import, oauth
+│     ├─ scheduled-alerts/       Cron: reminders / digests / budget warnings
+│     └─ personality/  parse-sms/  chat-agent/  goal-nudge/  (last three legacy)
 ├─ types/
 │  └─ index.ts                   Profile, Transaction, Goal, Nudge, etc.
 ├─ app.json                      Expo config (scheme: pocket, plugins, web bundler)
