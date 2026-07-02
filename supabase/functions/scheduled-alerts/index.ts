@@ -16,6 +16,17 @@
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
+// Constant-time compare so the cron secret can't be recovered via timing.
+function secretEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const x = enc.encode(a);
+  const y = enc.encode(b);
+  if (x.length !== y.length) return false;
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
@@ -72,7 +83,7 @@ Deno.serve(async (req) => {
 
   try {
     const CRON_SECRET = Deno.env.get('CRON_SECRET');
-    if (!CRON_SECRET || req.headers.get('x-cron-secret') !== CRON_SECRET) {
+    if (!CRON_SECRET || !secretEqual(req.headers.get('x-cron-secret') ?? '', CRON_SECRET)) {
       return json({ error: 'Unauthorized' }, 401);
     }
 

@@ -16,9 +16,8 @@
 //
 // Returns 200 + { imported, duplicates, skipped, totalExpenses }.
 //
-// Env vars required:
-//   SPLITWISE_API_KEY   — set via `npx supabase secrets set SPLITWISE_API_KEY=...`
-// Auto-injected: SUPABASE_URL, SUPABASE_ANON_KEY
+// Auth: per-user Splitwise OAuth token from `splitwise_connections` ONLY — no
+// shared API key. Auto-injected: SUPABASE_URL, SUPABASE_ANON_KEY.
 
 // deno-lint-ignore-file no-explicit-any
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';

@@ -14,8 +14,8 @@
 //
 // Returns 200 + { owe: [...], owedToMe: [...], totalOweMinor, currency }.
 //
-// Env vars required (set via `npx supabase secrets set SPLITWISE_API_KEY=...`):
-//   SPLITWISE_API_KEY   — personal API key (test account) / later: per-user OAuth token
+// Auth: per-user Splitwise OAuth token from `splitwise_connections` ONLY — no
+// shared API key (a shared key would expose one user's Splitwise data to all).
 //
 // Auto-injected by Supabase (no setup needed):
 //   SUPABASE_URL
